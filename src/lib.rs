@@ -230,8 +230,10 @@ fn process(mut state: State) -> State {
             let r1 = (instruction >> 6) & 0x7;
             let offset = instruction & 0x3f;
 
-            let address = state.registers[r1 as usize] + sign_extend(offset, 6);
-            state.memory[address as usize] = state.registers[r0 as usize];
+            let address = state.registers[r0 as usize];
+            let value = state.registers[r1 as usize] + sign_extend(offset, 6);
+
+            state.memory[address as usize] = value;
         }
 
         Opcode::UNUSED => {
@@ -611,7 +613,7 @@ mod tests {
 
         let state = process(state);
 
-        assert_eq!(state.memory[2 + 3], 42);
+        assert_eq!(state.memory[42], 2 + 3);
     }
 
     #[test]
