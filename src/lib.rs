@@ -131,7 +131,7 @@ fn process(mut state: State) -> State {
 
     eprintln!("opcode: {:?}", opcode);
 
-    state.pc += 1;
+    state.pc = state.pc.wrapping_add(1);
 
     match opcode {
         Opcode::BR => {
@@ -144,7 +144,7 @@ fn process(mut state: State) -> State {
                (p == 1 && state.condition == Condition::P) {
                    let pc_offset = instruction & 0x1ff;
 
-                   state.pc = state.pc + sign_extend(pc_offset, 9);
+                   state.pc = state.pc.wrapping_add(sign_extend(pc_offset, 9));
             }
         }
 
@@ -156,11 +156,11 @@ fn process(mut state: State) -> State {
             if immediate_flag {
                 let immediate_value = sign_extend(instruction & 0x1f, 5);
 
-                state.registers[r0 as usize] = state.registers[r1 as usize] + immediate_value;
+                state.registers[r0 as usize] = state.registers[r1 as usize].wrapping_add(immediate_value);
             } else {
                 let r2 = instruction & 0x7;
 
-                state.registers[r0 as usize] = state.registers[r1 as usize] + state.registers[r2 as usize];
+                state.registers[r0 as usize] = state.registers[r1 as usize].wrapping_add(state.registers[r2 as usize]);
             }
 
             state = update_flags(state, r0);
@@ -169,7 +169,7 @@ fn process(mut state: State) -> State {
         Opcode::LD => {
             let r0 = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
-            let address = state.pc + sign_extend(pc_offset, 9);
+            let address = state.pc.wrapping_add(sign_extend(pc_offset, 9));
 
             state.registers[r0 as usize] = state.memory[address as usize];
 
@@ -179,7 +179,7 @@ fn process(mut state: State) -> State {
         Opcode::ST => {
             let r0 = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
-            let address = state.pc + sign_extend(pc_offset, 9);
+            let address = state.pc.wrapping_add(sign_extend(pc_offset, 9));
 
             state.memory[address as usize] = state.registers[r0 as usize];
         }
@@ -191,7 +191,7 @@ fn process(mut state: State) -> State {
             let r = (instruction >> 6) & 7;
 
             if use_pc_offset == 1 {
-                state.pc = state.pc + sign_extend(pc_offset, 9);
+                state.pc = state.pc.wrapping_add(sign_extend(pc_offset, 9));
             } else {
                 state.pc = state.registers[r as usize];
             }
@@ -219,7 +219,7 @@ fn process(mut state: State) -> State {
             let r1 = (instruction >> 6) & 0x7;
             let offset = (instruction) & 0x3f;
 
-            let address = state.registers[r1 as usize] + sign_extend(offset, 6);
+            let address = state.registers[r1 as usize].wrapping_add(sign_extend(offset, 6));
             state.registers[r0 as usize] = state.memory[address as usize];
 
             state = update_flags(state, r0);
@@ -231,7 +231,7 @@ fn process(mut state: State) -> State {
             let offset = instruction & 0x3f;
 
             let address = state.registers[r0 as usize];
-            let value = state.registers[r1 as usize] + sign_extend(offset, 6);
+            let value = state.registers[r1 as usize].wrapping_add(sign_extend(offset, 6));
 
             state.memory[address as usize] = value;
         }
@@ -251,7 +251,7 @@ fn process(mut state: State) -> State {
         Opcode::LDI => {
             let r0 = (instruction >> 9) & 0x7;
             let pc_offset = sign_extend(instruction & 0x1ff, 9);
-            let address = state.pc + pc_offset;
+            let address = state.pc.wrapping_add(pc_offset);
 
             state.registers[r0 as usize] = state.memory[address as usize];
 
@@ -262,7 +262,7 @@ fn process(mut state: State) -> State {
             let r = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
 
-            let address = state.pc + sign_extend(pc_offset, 9);
+            let address = state.pc.wrapping_add(sign_extend(pc_offset, 9));
 
             state.memory[state.memory[address as usize] as usize] = state.registers[r as usize];
         }
@@ -281,7 +281,7 @@ fn process(mut state: State) -> State {
             let r = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
 
-            state.registers[r as usize] = state.pc + sign_extend(pc_offset, 9);
+            state.registers[r as usize] = state.pc.wrapping_add(sign_extend(pc_offset, 9));
         }
 
         Opcode::TRAP => {
