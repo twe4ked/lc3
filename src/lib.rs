@@ -92,17 +92,17 @@ enum TrapVector {
 }
 
 impl TrapVector {
-    fn from_instruction(instruction: u16) -> TrapVector {
+    fn from_instruction(instruction: u16) -> Result<TrapVector, String> {
         let value = instruction & 0xFF;
 
         match value {
-            0x20 => TrapVector::GETC,
-            0x21 => TrapVector::OUT,
-            0x22 => TrapVector::PUTS,
-            0x23 => TrapVector::IN,
-            0x24 => TrapVector::PUTSP,
-            0x25 => TrapVector::HALT,
-            _ => panic!("bad TRAP vector: {}", value),
+            0x20 => Ok(TrapVector::GETC),
+            0x21 => Ok(TrapVector::OUT),
+            0x22 => Ok(TrapVector::PUTS),
+            0x23 => Ok(TrapVector::IN),
+            0x24 => Ok(TrapVector::PUTSP),
+            0x25 => Ok(TrapVector::HALT),
+            _ => Err(format!("bad TRAP vector: {:x}", value)),
         }
     }
 }
@@ -285,38 +285,38 @@ fn process(mut state: State) -> State {
         }
 
         Opcode::TRAP => {
-            let trap_vector = TrapVector::from_instruction(instruction);
-
-            match trap_vector {
-                TrapVector::GETC => {
-                    panic!("not implemented: {:?}", trap_vector);
-                }
-
-                TrapVector::OUT => {
-                    panic!("not implemented: {:?}", trap_vector);
-                }
-
-                TrapVector::PUTS => {
-                    let mut i = state.registers[0] as usize;
-
-                    while state.memory[i] != 0 {
-                        print!("{}", char::from(state.memory[i] as u8));
-                        i += 1;
+            if let Ok(trap_vector) = TrapVector::from_instruction(instruction) {
+                match trap_vector {
+                    TrapVector::GETC => {
+                        panic!("not implemented: {:?}", trap_vector);
                     }
 
-                    io::stdout().flush().unwrap();
-                }
+                    TrapVector::OUT => {
+                        panic!("not implemented: {:?}", trap_vector);
+                    }
 
-                TrapVector::IN => {
-                    panic!("not implemented: {:?}", trap_vector);
-                }
+                    TrapVector::PUTS => {
+                        let mut i = state.registers[0] as usize;
 
-                TrapVector::PUTSP => {
-                    panic!("not implemented: {:?}", trap_vector);
-                }
+                        while state.memory[i] != 0 {
+                            print!("{}", char::from(state.memory[i] as u8));
+                            i += 1;
+                        }
 
-                TrapVector::HALT => {
-                    state.running = false;
+                        io::stdout().flush().unwrap();
+                    }
+
+                    TrapVector::IN => {
+                        panic!("not implemented: {:?}", trap_vector);
+                    }
+
+                    TrapVector::PUTSP => {
+                        panic!("not implemented: {:?}", trap_vector);
+                    }
+
+                    TrapVector::HALT => {
+                        state.running = false;
+                    }
                 }
             }
         }
