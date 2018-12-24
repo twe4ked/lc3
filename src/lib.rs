@@ -4,6 +4,9 @@ use std::fmt;
 use std::io::BufReader;
 use std::io::{self, Write};
 use byteorder::{BigEndian, ReadBytesExt};
+use rustyline;
+use regex::Regex;
+use lazy_static::lazy_static;
 
 #[derive(Debug, PartialEq)]
 pub struct Config {
@@ -131,17 +134,70 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     }
 
     while state.running {
-        state = process(state);
+        state = process(state, config.debug);
     }
 
     Ok(())
 }
 
-fn process(mut state: State) -> State {
+fn process(mut state: State, debug: bool) -> State {
     let instruction : u16 = state.memory[state.pc as usize];
     let opcode = Opcode::from_instruction(instruction);
 
-    eprintln!("opcode: {:?}", opcode);
+    if debug {
+        let mut rl = rustyline::Editor::<()>::new();
+        let readline = rl.readline(&format!("{:#04x}> ", state.pc));
+
+        lazy_static! {
+            static ref READ_REGEX: Regex = Regex::new(r"^read 0x([a-f0-9]{1,4})$").unwrap();
+        }
+
+        match readline {
+            Ok(line) => {
+                rl.add_history_entry(line.as_ref());
+
+                match line.as_ref() {
+                    "c" | "continue" => {
+                        // continue
+                    }
+
+                    "i" | "inspect" => {
+                        println!("{:?}, op_code: {:?}, instruction: {:#4x}, {:#016b}", state, opcode, instruction, instruction);
+                        return state;
+                    }
+
+                    line if READ_REGEX.is_match(line) => {
+                        if let Some(address) = READ_REGEX.captures(line).unwrap().get(1) {
+                            let address = u16::from_str_radix(address.as_str(), 16).unwrap();
+                            let value = state.memory[address as usize];
+                            println!("{:#04x}, {:#016b}", value, value);
+                        }
+                        return state;
+                    }
+
+                    "exit" => {
+                        state.running = false;
+                        return state;
+                    }
+
+                    _ => {
+                        println!("Unknown command {:?}", line);
+                        return state;
+                    }
+                }
+            },
+            Err(rustyline::error::ReadlineError::Interrupted) => {
+                state.running = false;
+            },
+            Err(rustyline::error::ReadlineError::Eof) => {
+                state.running = false;
+            },
+            Err(err) => {
+                println!("Error: {:?}", err);
+                state.running = false;
+            }
+        }
+    }
 
     state.pc = state.pc.wrapping_add(1);
 
@@ -420,7 +476,7 @@ mod tests {
 
         state.registers[1] = 3;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.registers, [0, 3, 4, 0, 0, 0, 0, 0]);
         assert_eq!(state.condition, Condition::P);
@@ -439,7 +495,7 @@ mod tests {
         state.registers[0] = 2;
         state.registers[1] = 3;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.registers, [2, 3, 5, 0, 0, 0, 0, 0]);
         assert_eq!(state.condition, Condition::P);
@@ -456,7 +512,7 @@ mod tests {
         state.memory[0x3001] = 0x3002;
         state.memory[0x3002] = 42;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.registers, [42, 0, 0, 0, 0, 0, 0, 0]);
         assert_eq!(state.condition, Condition::P);
@@ -472,7 +528,7 @@ mod tests {
 
         state.registers[2] = 5;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.pc, 5);
     }
@@ -487,7 +543,7 @@ mod tests {
 
         state.condition = Condition::N;
 
-        let state = process(state);
+        let state = process(state, false);
 
         // incremented pc + 5
         assert_eq!(state.pc, 0x3006);
@@ -503,7 +559,7 @@ mod tests {
 
         state.condition = Condition::P;
 
-        let state = process(state);
+        let state = process(state, false);
 
         // incremented pc + 1 (ingores the pc_offset)
         assert_eq!(state.pc, 0x3001);
@@ -521,7 +577,7 @@ mod tests {
 
         state.condition = Condition::P;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.registers[3], 42);
         assert_eq!(state.condition, Condition::P);
@@ -538,7 +594,7 @@ mod tests {
         state.registers[3] = 42;
         state.condition = Condition::P;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.memory[0x3000 + 1 + 5], 42);
     }
@@ -554,7 +610,7 @@ mod tests {
 
         state.registers[3] = 42;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.pc, 42);
         assert_eq!(state.registers[7], 0x3001);
@@ -569,7 +625,7 @@ mod tests {
         //                       `JSR |
         //                            `use pc_offset
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.pc, 0x3000 + 1 + 3);
         assert_eq!(state.registers[7], 0x3001);
@@ -586,7 +642,7 @@ mod tests {
         state.registers[2] = 3;
         state.registers[3] = 5;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.registers[1], 3 & 5);
     }
@@ -601,7 +657,7 @@ mod tests {
 
         state.registers[2] = 3;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.registers[1], 3 & 5);
     }
@@ -617,7 +673,7 @@ mod tests {
         state.registers[2] = 1;
         state.memory[1 + 3] = 42;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.registers[1], 42);
         assert_eq!(state.condition, Condition::P);
@@ -634,7 +690,7 @@ mod tests {
         state.registers[1] = 42;
         state.registers[2] = 2;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.memory[42], 2 + 3);
     }
@@ -649,7 +705,7 @@ mod tests {
 
         state.registers[2] = 42;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.registers[1], !42);
         // TODO: Why is this Z?
@@ -668,7 +724,7 @@ mod tests {
         state.registers[1] = 42;
         state.memory[(state.pc + 1 + 2) as usize] = address;
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.memory[address as usize], 42);
     }
@@ -681,7 +737,7 @@ mod tests {
         //                       ^    `r0 `pc_offset (2)
         //                       `LEA
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.registers[1], 0x3000 + 1 + 2);
     }
@@ -694,7 +750,7 @@ mod tests {
         //                       ^         `HALT (0x25)
         //                       `TRAP
 
-        let state = process(state);
+        let state = process(state, false);
 
         assert_eq!(state.running, false);
     }
