@@ -8,17 +8,29 @@ use byteorder::{BigEndian, ReadBytesExt};
 #[derive(Debug, PartialEq)]
 pub struct Config {
     pub filename: String,
+    debug: bool,
 }
 
 impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &'static str> {
+    pub fn new(args: &Vec<String>) -> Result<Config, &'static str> {
         if args.len() < 2 {
             return Err("not enough arguments");
         }
 
-        let filename = args[1].clone();
+        let mut config = Config {
+            filename: "".to_string(),
+            debug: false,
+        };
 
-        Ok(Config { filename })
+        for arg in args {
+            if arg == "--debug" {
+                config.debug = true;
+            } else {
+                config.filename = arg.clone();
+            }
+        }
+
+        Ok(config)
     }
 }
 
@@ -368,22 +380,33 @@ mod tests {
 
     #[test]
     fn config_valid_arguments() {
-        let args = [String::from("program_name"), String::from("filename")];
+        let args = [String::from("program_name"), String::from("filename")].to_vec();
 
-        assert_eq!(
-            Config::new(&args).unwrap().filename,
-            String::from("filename")
-        );
+        assert_eq!(Config::new(&args).unwrap().filename, String::from("filename"));
+        assert_eq!(Config::new(&args).unwrap().debug, false);
     }
 
     #[test]
     fn config_not_enough_arguments() {
-        let args = [String::from("program_name")];
+        let args = [String::from("program_name")].to_vec();
 
-        assert_eq!(
-            Config::new(&args),
-            Err("not enough arguments")
-        );
+        assert_eq!(Config::new(&args), Err("not enough arguments"));
+    }
+
+    #[test]
+    fn config_with_debug() {
+        let args = [String::from("program_name"), String::from("filename"), String::from("--debug")].to_vec();
+
+        assert_eq!(Config::new(&args).unwrap().filename, String::from("filename"));
+        assert_eq!(Config::new(&args).unwrap().debug, true);
+    }
+
+    #[test]
+    fn config_with_debug_first() {
+        let args = [String::from("program_name"), String::from("--debug"), String::from("filename")].to_vec();
+
+        assert_eq!(Config::new(&args).unwrap().filename, String::from("filename"));
+        assert_eq!(Config::new(&args).unwrap().debug, true);
     }
 
     #[test]
