@@ -7,7 +7,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 #[derive(Debug, PartialEq)]
 pub struct Config {
-    pub filename: String,
+    filename: String,
     debug: bool,
 }
 
