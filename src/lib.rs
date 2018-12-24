@@ -44,7 +44,7 @@ impl State {
 
 impl fmt::Debug for State {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "State registers: {:?}", self.registers)
+        write!(f, "registers: {:?}, condition: {:?}", self.registers, self.condition)
     }
 }
 
