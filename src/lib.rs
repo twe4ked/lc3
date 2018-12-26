@@ -128,10 +128,11 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let mut state = State::new();
 
     let buffer = read_file(config.filename);
+    let starting_address = buffer[0];
 
     let mut i = 0;
-    while i < buffer.len() {
-        state.memory[0x3000 + i] = buffer[i];
+    while i < (buffer.len() - 1) {
+        state.memory[(starting_address as usize) + i] = buffer[i + 1];
         i += 1
     }
 
