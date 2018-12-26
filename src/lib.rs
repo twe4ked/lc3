@@ -8,6 +8,8 @@ use rustyline;
 use regex::Regex;
 use lazy_static::lazy_static;
 
+type Memory = [u16; std::u16::MAX as usize];
+
 #[derive(Debug, PartialEq)]
 pub struct Config {
     filename: String,
@@ -38,7 +40,7 @@ impl Config {
 }
 
 struct State {
-    memory: [u16; std::u16::MAX as usize],
+    memory: Memory,
     registers: [u16; 8],
     pc: u16,
     condition: Condition,
@@ -141,7 +143,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 }
 
 fn process(mut state: State, debug: bool) -> State {
-    let instruction : u16 = state.memory[state.pc as usize];
+    let instruction : u16 = read_memory(&state.memory, state.pc);
     let opcode = Opcode::from_instruction(instruction);
 
     if debug {
@@ -169,7 +171,7 @@ fn process(mut state: State, debug: bool) -> State {
                     line if READ_REGEX.is_match(line) => {
                         if let Some(address) = READ_REGEX.captures(line).unwrap().get(1) {
                             let address = u16::from_str_radix(address.as_str(), 16).unwrap();
-                            let value = state.memory[address as usize];
+                            let value = read_memory(&state.memory, address);
                             println!("{:#04x}, {:#016b}", value, value);
                         }
                         return state;
@@ -288,7 +290,7 @@ fn process(mut state: State, debug: bool) -> State {
             let offset = (instruction) & 0x3f;
 
             let address = state.registers[r1 as usize].wrapping_add(sign_extend(offset, 6));
-            state.registers[r0 as usize] = state.memory[address as usize];
+            state.registers[r0 as usize] = read_memory(&state.memory, address);
 
             state = update_flags(state, r0);
         }
@@ -321,7 +323,7 @@ fn process(mut state: State, debug: bool) -> State {
             let pc_offset = sign_extend(instruction & 0x1ff, 9);
             let address = state.pc.wrapping_add(pc_offset);
 
-            state.registers[r0 as usize] = state.memory[address as usize];
+            state.registers[r0 as usize] = read_memory(&state.memory, address);
 
             state = update_flags(state, r0);
         }
@@ -332,7 +334,7 @@ fn process(mut state: State, debug: bool) -> State {
 
             let address = state.pc.wrapping_add(sign_extend(pc_offset, 9));
 
-            state.memory[state.memory[address as usize] as usize] = state.registers[r as usize];
+            state.memory[read_memory(&state.memory, address) as usize] = state.registers[r as usize];
         }
 
         Opcode::JMP => {
@@ -364,10 +366,10 @@ fn process(mut state: State, debug: bool) -> State {
                     }
 
                     TrapVector::PUTS => {
-                        let mut i = state.registers[0] as usize;
+                        let mut i : u16 = state.registers[0];
 
-                        while state.memory[i] != 0 {
-                            print!("{}", char::from(state.memory[i] as u8));
+                        while read_memory(&state.memory, i) != 0 {
+                            print!("{}", char::from(read_memory(&state.memory, i) as u8));
                             i += 1;
                         }
 
@@ -428,6 +430,14 @@ fn read_file(filename: String) -> Vec<u16> {
     buf_reader.read_u16_into::<BigEndian>(&mut buffer[..]).expect("failed to read");
 
     buffer
+}
+
+fn read_memory(memory: &Memory, address: u16) -> u16 {
+    if address < std::u16::MAX {
+        memory[address as usize]
+    } else {
+        0
+    }
 }
 
 #[cfg(test)]
@@ -677,6 +687,22 @@ mod tests {
 
         assert_eq!(state.registers[1], 42);
         assert_eq!(state.condition, Condition::P);
+    }
+
+    #[test]
+    fn process_ldr_memory_address_too_big() {
+        let mut state = State::new();
+
+        state.memory[0x3000] = 0b0110_001_010_000001;
+        //                       ^    `r0 `r1 `offset (1)
+        //                       `AND
+
+        state.registers[2] = std::u16::MAX - 1;
+
+        let state = process(state, false);
+
+        assert_eq!(state.registers[1], 0);
+        assert_eq!(state.condition, Condition::Z);
     }
 
     #[test]
