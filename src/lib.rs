@@ -169,6 +169,11 @@ fn process(mut state: State, debug: bool) -> State {
                         return state;
                     }
 
+                    "d" | "disassemble" => {
+                        disassemble(instruction);
+                        return state;
+                    }
+
                     line if READ_REGEX.is_match(line) => {
                         if let Some(address) = READ_REGEX.captures(line).unwrap().get(1) {
                             let address = u16::from_str_radix(address.as_str(), 16).unwrap();
@@ -394,6 +399,127 @@ fn process(mut state: State, debug: bool) -> State {
     }
 
     state
+}
+
+fn disassemble(instruction: u16) {
+    let opcode = Opcode::from_instruction(instruction);
+
+    match opcode {
+        Opcode::BR => {
+            let n = (instruction >> 11) & 0x1;
+            let z = (instruction >> 10) & 0x1;
+            let p = (instruction >> 9) & 0x1;
+
+            println!("{:?}, {:#016b}, n: {}, z: {}, p: {}", opcode, instruction, n, z, p);
+        }
+
+        Opcode::ADD => {
+            let r0 = (instruction >> 9) & 0x7;
+            let r1 = (instruction >> 6) & 0x7;
+            let immediate_flag = ((instruction >> 5) & 0x1) == 0x1;
+
+            println!("{:?}, {:#016b}, r0: {}, r1: {}, immediate_flag: {}", opcode, instruction, r0, r1, immediate_flag);
+        }
+
+        Opcode::LD => {
+            let r0 = (instruction >> 9) & 0x7;
+            let pc_offset = instruction & 0x1ff;
+
+            println!("{:?}, {:#016b}, r0: {}, pc_offset: {}", opcode, instruction, r0, pc_offset);
+        }
+
+        Opcode::ST => {
+            let r0 = (instruction >> 9) & 0x7;
+            let pc_offset = instruction & 0x1ff;
+
+            println!("{:?}, {:#016b}, r0: {}, pc_offset: {}", opcode, instruction, r0, pc_offset);
+        }
+
+        Opcode::JSR => {
+            let use_pc_offset = (instruction >> 11) & 1;
+            let pc_offset = instruction & 0x1ff;
+            let r0 = (instruction >> 6) & 7;
+
+            println!("{:?}, {:#016b}, use_pc_offset: {}, pc_offset: {}, r0: {}",
+                     opcode, instruction, use_pc_offset, pc_offset, r0);
+        }
+
+        Opcode::AND => {
+            let immediate_flag = ((instruction >> 5) & 1) == 1;
+            let immediate_value = sign_extend(instruction & 0x1f, 5);
+
+            let r0 = (instruction >> 9) & 0x7;
+            let r1 = (instruction >> 6) & 0x7;
+            let r2 = (instruction) & 0x7;
+
+            println!("{:?}, {:#016b}, immediate_flag: {}, immediate_value: {}, r0: {}, r1: {}, r2: {}",
+                     opcode, instruction, immediate_flag, immediate_value, r0, r1, r2);
+        }
+
+        Opcode::LDR => {
+            let r0 = (instruction >> 9) & 0x7;
+            let r1 = (instruction >> 6) & 0x7;
+            let offset = (instruction) & 0x3f;
+
+            println!("{:?}, {:#016b}, r0: {}, r1: {}, offset: {}", opcode, instruction, r0, r1, offset);
+        }
+
+        Opcode::STR => {
+            let r0 = (instruction >> 9) & 0x7;
+            let r1 = (instruction >> 6) & 0x7;
+            let offset = instruction & 0x3f;
+
+            println!("{:?}, {:#016b}, r0: {}, r1: {}, offset: {}", opcode, instruction, r0, r1, offset);
+        }
+
+        Opcode::UNUSED => {
+            panic!("unused");
+        }
+
+        Opcode::NOT => {
+            let r0 = (instruction >> 9) & 0x7;
+            let r1 = (instruction >> 6) & 0x7;
+
+            println!("{:?}, {:#016b}, r0: {}, r1: {}", opcode, instruction, r0, r1);
+        }
+
+        Opcode::LDI => {
+            let r0 = (instruction >> 9) & 0x7;
+            let pc_offset = sign_extend(instruction & 0x1ff, 9);
+
+            println!("{:?}, {:#016b}, r0: {}, pc_offset: {}", opcode, instruction, r0, pc_offset);
+        }
+
+        Opcode::STI => {
+            let r0 = (instruction >> 9) & 0x7;
+            let pc_offset = instruction & 0x1ff;
+
+            println!("{:?}, {:#016b}, r0: {}, pc_offset: {}", opcode, instruction, r0, pc_offset);
+        }
+
+        Opcode::JMP => {
+            let r0 = (instruction >> 6) & 0xa;
+
+            println!("{:?}, {:#016b}, r0: {}", opcode, instruction, r0);
+        }
+
+        Opcode::RESERVED => {
+            panic!("reserved");
+        }
+
+        Opcode::LEA => {
+            let r0 = (instruction >> 9) & 0x7;
+            let pc_offset = instruction & 0x1ff;
+
+            println!("{:?}, {:#016b}, r0: {}, pc_offset: {}", opcode, instruction, r0, pc_offset);
+        }
+
+        Opcode::TRAP => {
+            if let Ok(trap_vector) = TrapVector::from_instruction(instruction) {
+                println!("{:?}, {:#016b}, trap_vector: {:?}", opcode, instruction, trap_vector);
+            }
+        }
+    }
 }
 
 fn sign_extend(mut value: u16, bit_count: u8) -> u16 {
