@@ -214,12 +214,12 @@ fn process(mut state: State, debug_on: bool) -> State {
             let temp = state.pc;
             let use_pc_offset = (instruction >> 11) & 1;
             let pc_offset = instruction & 0x1ff;
-            let r = (instruction >> 6) & 7;
+            let r0 = (instruction >> 6) & 7;
 
             if use_pc_offset == 1 {
                 state.pc = state.pc.wrapping_add(sign_extend(pc_offset, 9));
             } else {
-                state.pc = state.registers[r as usize];
+                state.pc = state.registers[r0 as usize];
             }
 
             state.registers[7] = temp;
@@ -285,18 +285,18 @@ fn process(mut state: State, debug_on: bool) -> State {
         }
 
         Opcode::STI => {
-            let r = (instruction >> 9) & 0x7;
+            let r0 = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
 
             let address = state.pc.wrapping_add(sign_extend(pc_offset, 9));
 
-            state.memory[read_memory(&state.memory, address) as usize] = state.registers[r as usize];
+            state.memory[read_memory(&state.memory, address) as usize] = state.registers[r0 as usize];
         }
 
         Opcode::JMP => {
-            let r = (instruction >> 6) & 0xa;
+            let r0 = (instruction >> 6) & 0xa;
 
-            state.pc = state.registers[r as usize];
+            state.pc = state.registers[r0 as usize];
         }
 
         Opcode::RESERVED => {
@@ -304,10 +304,10 @@ fn process(mut state: State, debug_on: bool) -> State {
         }
 
         Opcode::LEA => {
-            let r = (instruction >> 9) & 0x7;
+            let r0 = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
 
-            state.registers[r as usize] = state.pc.wrapping_add(sign_extend(pc_offset, 9));
+            state.registers[r0 as usize] = state.pc.wrapping_add(sign_extend(pc_offset, 9));
         }
 
         Opcode::TRAP => {
