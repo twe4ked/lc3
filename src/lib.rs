@@ -45,6 +45,7 @@ struct State {
     pc: u16,
     condition: Condition,
     running: bool,
+    debug_continue: bool,
 }
 
 impl State {
@@ -55,6 +56,7 @@ impl State {
             pc: 0x3000,
             condition: Condition::P,
             running: true,
+            debug_continue: false,
         }
     }
 }
@@ -143,67 +145,15 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn process(mut state: State, debug: bool) -> State {
+fn process(mut state: State, debug_on: bool) -> State {
     let instruction : u16 = read_memory(&state.memory, state.pc);
     let opcode = Opcode::from_instruction(instruction);
 
-    if debug {
-        let mut rl = rustyline::Editor::<()>::new();
-        let readline = rl.readline(&format!("{:#04x}> ", state.pc));
+    if debug_on {
+        state = debug(state);
 
-        lazy_static! {
-            static ref READ_REGEX: Regex = Regex::new(r"^read 0x([a-f0-9]{1,4})$").unwrap();
-        }
-
-        match readline {
-            Ok(line) => {
-                rl.add_history_entry(line.as_ref());
-
-                match line.as_ref() {
-                    "c" | "continue" => {
-                        // continue
-                    }
-
-                    "i" | "inspect" => {
-                        println!("{:?}, op_code: {:?}, instruction: {:#4x}, {:#016b}", state, opcode, instruction, instruction);
-                        return state;
-                    }
-
-                    "d" | "disassemble" => {
-                        disassemble(instruction);
-                        return state;
-                    }
-
-                    line if READ_REGEX.is_match(line) => {
-                        if let Some(address) = READ_REGEX.captures(line).unwrap().get(1) {
-                            let address = u16::from_str_radix(address.as_str(), 16).unwrap();
-                            let value = read_memory(&state.memory, address);
-                            println!("{:#04x}, {:#016b}", value, value);
-                        }
-                        return state;
-                    }
-
-                    "exit" => {
-                        state.running = false;
-                        return state;
-                    }
-
-                    _ => {
-                        println!("Unknown command {:?}", line);
-                        return state;
-                    }
-                }
-            },
-            Err(rustyline::error::ReadlineError::Interrupted) => {
-                state.running = false;
-            },
-            Err(rustyline::error::ReadlineError::Eof) => {
-                state.running = false;
-            },
-            Err(err) => {
-                println!("Error: {:?}", err);
-                state.running = false;
-            }
+        if !state.debug_continue {
+            return state;
         }
     }
 
@@ -401,9 +351,69 @@ fn process(mut state: State, debug: bool) -> State {
     state
 }
 
-fn disassemble(instruction: u16) {
+fn debug(mut state: State) -> State {
+    let mut rl = rustyline::Editor::<()>::new();
+    let readline = rl.readline(&format!("{:#04x}> ", state.pc));
+
+    let instruction : u16 = read_memory(&state.memory, state.pc);
     let opcode = Opcode::from_instruction(instruction);
 
+    lazy_static! {
+        static ref READ_REGEX: Regex = Regex::new(r"^read 0x([a-f0-9]{1,4})$").unwrap();
+    }
+
+    state.debug_continue = false;
+
+    match readline {
+        Ok(line) => {
+            rl.add_history_entry(line.as_ref());
+
+            match line.as_ref() {
+                "c" | "continue" => {
+                    state.debug_continue = true;
+                }
+
+                "i" | "inspect" => {
+                    println!("{:?}, op_code: {:?}, instruction: {:#4x}, {:#016b}", state, opcode, instruction, instruction);
+                }
+
+                "d" | "disassemble" => {
+                    disassemble(instruction, opcode);
+                }
+
+                line if READ_REGEX.is_match(line) => {
+                    if let Some(address) = READ_REGEX.captures(line).unwrap().get(1) {
+                        let address = u16::from_str_radix(address.as_str(), 16).unwrap();
+                        let value = read_memory(&state.memory, address);
+                        println!("{:#04x}, {:#016b}", value, value);
+                    }
+                }
+
+                "exit" => {
+                    state.running = false;
+                }
+
+                _ => {
+                    println!("Unknown command {:?}", line);
+                }
+            }
+        },
+        Err(rustyline::error::ReadlineError::Interrupted) => {
+            state.running = false;
+        },
+        Err(rustyline::error::ReadlineError::Eof) => {
+            state.running = false;
+        },
+        Err(err) => {
+            println!("Error: {:?}", err);
+            state.running = false;
+        }
+    }
+
+    state
+}
+
+fn disassemble(instruction: u16, opcode: Opcode) {
     match opcode {
         Opcode::BR => {
             let n = (instruction >> 11) & 0x1;
