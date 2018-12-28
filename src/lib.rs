@@ -46,10 +46,11 @@ struct State {
     condition: Condition,
     running: bool,
     debug_continue: bool,
+    debug: bool,
 }
 
 impl State {
-    pub fn new() -> State {
+    pub fn new(debug: bool) -> State {
         State {
             memory: [0; std::u16::MAX as usize],
             registers: [0; 8],
@@ -57,6 +58,7 @@ impl State {
             condition: Condition::P,
             running: true,
             debug_continue: false,
+            debug: debug,
         }
     }
 }
@@ -127,7 +129,7 @@ impl TrapVector {
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let mut state = State::new();
+    let mut state = State::new(config.debug);
 
     let buffer = read_file(config.filename);
     let starting_address = buffer[0];
@@ -139,17 +141,17 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     }
 
     while state.running {
-        state = process(state, config.debug);
+        state = process(state);
     }
 
     Ok(())
 }
 
-fn process(mut state: State, debug_on: bool) -> State {
+fn process(mut state: State) -> State {
     let instruction : u16 = read_memory(&state.memory, state.pc);
     let opcode = Opcode::from_instruction(instruction);
 
-    if debug_on {
+    if state.debug {
         state = debug(state);
 
         if !state.debug_continue {
@@ -614,7 +616,7 @@ mod tests {
 
     #[test]
     fn process_add_immediate() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0001_010_001_1_00001;
         //                       ^    ^   `r1 ^ ^
@@ -623,7 +625,7 @@ mod tests {
 
         state.registers[1] = 3;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.registers, [0, 3, 4, 0, 0, 0, 0, 0]);
         assert_eq!(state.condition, Condition::P);
@@ -631,7 +633,7 @@ mod tests {
 
     #[test]
     fn process_add_register() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0001_010_001_0_00_000;
         //                       ^    ^   `r1 ^ ^  `r0
@@ -642,7 +644,7 @@ mod tests {
         state.registers[0] = 2;
         state.registers[1] = 3;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.registers, [2, 3, 5, 0, 0, 0, 0, 0]);
         assert_eq!(state.condition, Condition::P);
@@ -650,7 +652,7 @@ mod tests {
 
     #[test]
     fn process_ldi() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b1010_000_000000001;
         //                       ^    `r0 ^
@@ -659,7 +661,7 @@ mod tests {
         state.memory[0x3001] = 0x3002;
         state.memory[0x3002] = 42;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.registers, [42, 0, 0, 0, 0, 0, 0, 0]);
         assert_eq!(state.condition, Condition::P);
@@ -667,7 +669,7 @@ mod tests {
 
     #[test]
     fn process_jmp() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b1100_000_010_000000;
         //                       ^        `register
@@ -675,14 +677,14 @@ mod tests {
 
         state.registers[2] = 5;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.pc, 5);
     }
 
     #[test]
     fn process_br_n_true() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0000_1_0_0_000000101;
         //                       ^    `n    `pc_offset (5)
@@ -690,7 +692,7 @@ mod tests {
 
         state.condition = Condition::N;
 
-        let state = process(state, false);
+        let state = process(state);
 
         // incremented pc + 5
         assert_eq!(state.pc, 0x3006);
@@ -698,7 +700,7 @@ mod tests {
 
     #[test]
     fn process_br_n_false() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0000_1_0_0_000000101;
         //                       ^    `n    `pc_offset (5)
@@ -706,7 +708,7 @@ mod tests {
 
         state.condition = Condition::P;
 
-        let state = process(state, false);
+        let state = process(state);
 
         // incremented pc + 1 (ingores the pc_offset)
         assert_eq!(state.pc, 0x3001);
@@ -714,7 +716,7 @@ mod tests {
 
     #[test]
     fn process_ld() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0010_011_000000101;
         //                       ^    `r3 ^
@@ -724,7 +726,7 @@ mod tests {
 
         state.condition = Condition::P;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.registers[3], 42);
         assert_eq!(state.condition, Condition::P);
@@ -732,7 +734,7 @@ mod tests {
 
     #[test]
     fn process_st() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0011_011_000000101;
         //                       ^    `r3 ^
@@ -741,14 +743,14 @@ mod tests {
         state.registers[3] = 42;
         state.condition = Condition::P;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.memory[0x3000 + 1 + 5], 42);
     }
 
     #[test]
     fn process_jsr() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0100_0_00_011_000000;
         //                       ^    ^ ^  `r3 `unused
@@ -757,7 +759,7 @@ mod tests {
 
         state.registers[3] = 42;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.pc, 42);
         assert_eq!(state.registers[7], 0x3001);
@@ -765,14 +767,14 @@ mod tests {
 
     #[test]
     fn process_jsr_use_pc_offset() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0100_1_00000000011;
         //                       ^    ^ `pc_offset (k)
         //                       `JSR |
         //                            `use pc_offset
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.pc, 0x3000 + 1 + 3);
         assert_eq!(state.registers[7], 0x3001);
@@ -780,7 +782,7 @@ mod tests {
 
     #[test]
     fn process_and() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0101_001_010_0_00_011;
         //                       ^    `r0 `r1 ^    `r2
@@ -789,14 +791,14 @@ mod tests {
         state.registers[2] = 3;
         state.registers[3] = 5;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.registers[1], 3 & 5);
     }
 
     #[test]
     fn process_and_immediate() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0101_001_010_1_00101;
         //                       ^    `r0 `r1 ^ `immediate_value (5)
@@ -804,14 +806,14 @@ mod tests {
 
         state.registers[2] = 3;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.registers[1], 3 & 5);
     }
 
     #[test]
     fn process_ldr() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0110_001_010_000011;
         //                       ^    `r0 `r1 `offset (3)
@@ -820,7 +822,7 @@ mod tests {
         state.registers[2] = 1;
         state.memory[1 + 3] = 42;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.registers[1], 42);
         assert_eq!(state.condition, Condition::P);
@@ -828,7 +830,7 @@ mod tests {
 
     #[test]
     fn process_ldr_memory_address_too_big() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0110_001_010_000001;
         //                       ^    `r0 `r1 `offset (1)
@@ -836,7 +838,7 @@ mod tests {
 
         state.registers[2] = std::u16::MAX - 1;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.registers[1], 0);
         assert_eq!(state.condition, Condition::Z);
@@ -844,7 +846,7 @@ mod tests {
 
     #[test]
     fn process_str() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b0111_001_010_000011;
         //                       ^    `r0 `r1 `offset (3)
@@ -853,14 +855,14 @@ mod tests {
         state.registers[1] = 42;
         state.registers[2] = 2;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.memory[42], 2 + 3);
     }
 
     #[test]
     fn process_not() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b1001_001_010_1_11111;
         //                       ^    `r0 `r1
@@ -868,7 +870,7 @@ mod tests {
 
         state.registers[2] = 42;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.registers[1], !42);
         // TODO: Why is this Z?
@@ -877,7 +879,7 @@ mod tests {
 
     #[test]
     fn process_sti() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b1011_001_000000010;
         //                       ^    `r0 `pc_offset (2)
@@ -887,34 +889,38 @@ mod tests {
         state.registers[1] = 42;
         state.memory[(state.pc + 1 + 2) as usize] = address;
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.memory[address as usize], 42);
     }
 
     #[test]
     fn process_lea() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b1110_001_000000010;
         //                       ^    `r0 `pc_offset (2)
         //                       `LEA
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.registers[1], 0x3000 + 1 + 2);
     }
 
     #[test]
     fn process_trap_halt() {
-        let mut state = State::new();
+        let mut state = new_state();
 
         state.memory[0x3000] = 0b1111_0000_00100101;
         //                       ^         `HALT (0x25)
         //                       `TRAP
 
-        let state = process(state, false);
+        let state = process(state);
 
         assert_eq!(state.running, false);
+    }
+
+    fn new_state() -> State {
+        State::new(false)
     }
 }
