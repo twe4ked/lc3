@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::fs;
-use std::fmt;
 use std::io::BufReader;
 use std::io::{self, Write};
 use byteorder::{BigEndian, ReadBytesExt};
@@ -8,7 +7,8 @@ use rustyline;
 use regex::Regex;
 use lazy_static::lazy_static;
 
-type Memory = [u16; std::u16::MAX as usize];
+mod state;
+use crate::state::*;
 
 #[derive(Debug, PartialEq)]
 pub struct Config {
@@ -37,45 +37,6 @@ impl Config {
 
         Ok(config)
     }
-}
-
-struct State {
-    memory: Memory,
-    registers: [u16; 8],
-    pc: u16,
-    condition: Condition,
-    running: bool,
-    debug_continue: bool,
-    debug: bool,
-    break_address: Option<u16>,
-}
-
-impl State {
-    pub fn new(debug: bool) -> State {
-        State {
-            memory: [0; std::u16::MAX as usize],
-            registers: [0; 8],
-            pc: 0x3000,
-            condition: Condition::P,
-            running: true,
-            debug_continue: false,
-            debug: debug,
-            break_address: None,
-        }
-    }
-}
-
-impl fmt::Debug for State {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "registers: {:?}, condition: {:?}", self.registers, self.condition)
-    }
-}
-
-#[derive(Debug, PartialEq)]
-enum Condition {
-    P = 1 << 0,
-    Z = 1 << 1,
-    N = 1 << 2,
 }
 
 #[derive(Debug)]
