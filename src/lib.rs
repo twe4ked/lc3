@@ -47,6 +47,7 @@ struct State {
     running: bool,
     debug_continue: bool,
     debug: bool,
+    break_address: Option<u16>,
 }
 
 impl State {
@@ -59,6 +60,7 @@ impl State {
             running: true,
             debug_continue: false,
             debug: debug,
+            break_address: None,
         }
     }
 }
@@ -141,16 +143,26 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     }
 
     while state.running {
-        state = if state.debug {
-            if state.debug_continue {
-                state.debug_continue = false;
-                process(state)
-            } else {
-                debug(state)
+        if state.debug {
+            let mut should_break = true;
+
+            if let Some(break_address) = state.break_address {
+                if break_address == state.pc {
+                    state.break_address = None;
+                    should_break = true;
+                } else {
+                    should_break = false;
+                }
             }
-        } else {
-            process(state)
+
+            while state.running && !state.debug_continue && should_break {
+                state = debug(state);
+            }
+
+            state.debug_continue = false;
         }
+
+        state = process(state)
     }
 
     Ok(())
@@ -363,6 +375,7 @@ fn debug(mut state: State) -> State {
 
     lazy_static! {
         static ref READ_REGEX: Regex = Regex::new(r"^read 0x([a-f0-9]{1,4})$").unwrap();
+        static ref BREAK_ADDRESS_REGEX: Regex = Regex::new(r"^break-address 0x([a-f0-9]{1,4})$").unwrap();
     }
 
     state.debug_continue = false;
@@ -389,6 +402,14 @@ fn debug(mut state: State) -> State {
                         let address = u16::from_str_radix(address.as_str(), 16).unwrap();
                         let value = read_memory(&state.memory, address);
                         println!("{:#04x}, {:#016b}", value, value);
+                    }
+                }
+
+                line if BREAK_ADDRESS_REGEX.is_match(line) => {
+                    if let Some(address) = BREAK_ADDRESS_REGEX.captures(line).unwrap().get(1) {
+                        let address = u16::from_str_radix(address.as_str(), 16).unwrap();
+                        state.break_address = Some(address);
+                        println!("Break address set to {:#04x}", address);
                     }
                 }
 
