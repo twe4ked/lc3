@@ -90,11 +90,6 @@ impl TrapVector {
     }
 }
 
-enum MemoryMappedRegister {
-    KBSR = 0xfe00, // keyboard status register
-    KBDR = 0xfe02, // keyboard data register
-}
-
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let mut state = State::new(config.debug);
 
@@ -134,7 +129,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 }
 
 fn process(mut state: State) -> State {
-    let instruction : u16 = read_memory(&state.memory, state.pc);
+    let instruction : u16 = state.read_memory(state.pc);
     let opcode = Opcode::from_instruction(instruction);
 
     state.pc = state.pc.wrapping_add(1);
@@ -226,7 +221,7 @@ fn process(mut state: State) -> State {
             let offset = (instruction) & 0x3f;
 
             let address = state.registers[r1 as usize].wrapping_add(sign_extend(offset, 6));
-            state.registers[r0 as usize] = read_memory(&state.memory, address);
+            state.registers[r0 as usize] = state.read_memory(address);
 
             state = update_flags(state, r0);
         }
@@ -259,7 +254,7 @@ fn process(mut state: State) -> State {
             let pc_offset = sign_extend(instruction & 0x1ff, 9);
             let address = state.pc.wrapping_add(pc_offset);
 
-            state.registers[r0 as usize] = read_memory(&state.memory, address);
+            state.registers[r0 as usize] = state.read_memory(address);
 
             state = update_flags(state, r0);
         }
@@ -270,7 +265,7 @@ fn process(mut state: State) -> State {
 
             let address = state.pc.wrapping_add(sign_extend(pc_offset, 9));
 
-            state.memory[read_memory(&state.memory, address) as usize] = state.registers[r0 as usize];
+            state.memory[state.read_memory(address) as usize] = state.registers[r0 as usize];
         }
 
         Opcode::JMP => {
@@ -304,8 +299,8 @@ fn process(mut state: State) -> State {
                     TrapVector::PUTS => {
                         let mut i : u16 = state.registers[0];
 
-                        while read_memory(&state.memory, i) != 0 {
-                            print!("{}", char::from(read_memory(&state.memory, i) as u8));
+                        while state.read_memory(i) != 0 {
+                            print!("{}", char::from(state.read_memory(i) as u8));
                             i += 1;
                         }
 
@@ -335,7 +330,7 @@ fn debug(mut state: State) -> State {
     let mut rl = rustyline::Editor::<()>::new();
     let readline = rl.readline(&format!("{:#04x}> ", state.pc));
 
-    let instruction : u16 = read_memory(&state.memory, state.pc);
+    let instruction : u16 = state.read_memory(state.pc);
     let opcode = Opcode::from_instruction(instruction);
 
     lazy_static! {
@@ -365,7 +360,7 @@ fn debug(mut state: State) -> State {
                 line if READ_REGEX.is_match(line) => {
                     if let Some(address) = READ_REGEX.captures(line).unwrap().get(1) {
                         let address = u16::from_str_radix(address.as_str(), 16).unwrap();
-                        let value = read_memory(&state.memory, address);
+                        let value = state.read_memory(address);
                         println!("{:#04x}, {:#016b}", value, value);
                     }
                 }
@@ -556,20 +551,6 @@ fn read_file(filename: String) -> Vec<u16> {
     buf_reader.read_u16_into::<BigEndian>(&mut buffer[..]).expect("failed to read");
 
     buffer
-}
-
-fn read_memory(memory: &Memory, address: u16) -> u16 {
-    if address == MemoryMappedRegister::KBSR as u16 {
-        panic!("KBSR");
-    } else if address == MemoryMappedRegister::KBDR  as u16 {
-        panic!("KBDR");
-    }
-
-    if address < std::u16::MAX {
-        memory[address as usize]
-    } else {
-        0
-    }
 }
 
 #[cfg(test)]

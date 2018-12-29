@@ -2,6 +2,11 @@ use std::fmt;
 
 pub type Memory = [u16; std::u16::MAX as usize];
 
+enum MemoryMappedRegister {
+    KBSR = 0xfe00, // keyboard status register
+    KBDR = 0xfe02, // keyboard data register
+}
+
 pub struct State {
     pub memory: Memory,
     pub registers: [u16; 8],
@@ -24,6 +29,20 @@ impl State {
             debug_continue: false,
             debug: debug,
             break_address: None,
+        }
+    }
+
+    pub fn read_memory(&self, address: u16) -> u16 {
+        if address == MemoryMappedRegister::KBSR as u16 {
+            panic!("KBSR");
+        } else if address == MemoryMappedRegister::KBDR  as u16 {
+            panic!("KBDR");
+        }
+
+        if address < std::u16::MAX {
+            self.memory[address as usize]
+        } else {
+            0
         }
     }
 }
