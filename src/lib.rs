@@ -141,7 +141,16 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     }
 
     while state.running {
-        state = process(state);
+        state = if state.debug {
+            if state.debug_continue {
+                state.debug_continue = false;
+                process(state)
+            } else {
+                debug(state)
+            }
+        } else {
+            process(state)
+        }
     }
 
     Ok(())
@@ -150,14 +159,6 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 fn process(mut state: State) -> State {
     let instruction : u16 = read_memory(&state.memory, state.pc);
     let opcode = Opcode::from_instruction(instruction);
-
-    if state.debug {
-        state = debug(state);
-
-        if !state.debug_continue {
-            return state;
-        }
-    }
 
     state.pc = state.pc.wrapping_add(1);
 
