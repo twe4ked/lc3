@@ -9,26 +9,8 @@ pub use crate::process::state::*;
 mod opcode;
 use crate::process::opcode::Opcode;
 
-#[derive(Debug)]
-enum TrapVector {
-    GETC, OUT, PUTS, IN, PUTSP, HALT,
-}
-
-impl TrapVector {
-    fn from_instruction(instruction: u16) -> Result<TrapVector, String> {
-        let value = instruction & 0xFF;
-
-        match value {
-            0x20 => Ok(TrapVector::GETC),
-            0x21 => Ok(TrapVector::OUT),
-            0x22 => Ok(TrapVector::PUTS),
-            0x23 => Ok(TrapVector::IN),
-            0x24 => Ok(TrapVector::PUTSP),
-            0x25 => Ok(TrapVector::HALT),
-            _ => Err(format!("bad TRAP vector: {:x}", value)),
-        }
-    }
-}
+mod trap_vector;
+use crate::process::trap_vector::TrapVector;
 
 pub fn process(mut state: State) -> State {
     let instruction : u16 = state.read_memory(state.pc);
