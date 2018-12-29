@@ -130,6 +130,11 @@ impl TrapVector {
     }
 }
 
+enum MemoryMappedRegister {
+    KBSR = 0xfe00, // keyboard status register
+    KBDR = 0xfe02, // keyboard data register
+}
+
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let mut state = State::new(config.debug);
 
@@ -594,6 +599,12 @@ fn read_file(filename: String) -> Vec<u16> {
 }
 
 fn read_memory(memory: &Memory, address: u16) -> u16 {
+    if address == MemoryMappedRegister::KBSR as u16 {
+        panic!("KBSR");
+    } else if address == MemoryMappedRegister::KBDR  as u16 {
+        panic!("KBDR");
+    }
+
     if address < std::u16::MAX {
         memory[address as usize]
     } else {
