@@ -5,7 +5,9 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 mod process;
 use crate::process::{process, debug, state::State};
-pub use crate::process::{Config};
+
+mod config;
+pub use crate::config::Config;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let mut state = State::new(config.debug);
