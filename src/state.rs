@@ -1,25 +1,25 @@
 use std::fmt;
 
-pub type Memory = [u16; std::u16::MAX as usize];
+pub(crate) type Memory = [u16; std::u16::MAX as usize];
 
 enum MemoryMappedRegister {
     KBSR = 0xfe00, // keyboard status register
     KBDR = 0xfe02, // keyboard data register
 }
 
-pub struct State {
-    pub memory: Memory,
-    pub registers: [u16; 8],
-    pub pc: u16,
-    pub condition: Condition,
-    pub running: bool,
-    pub debug_continue: bool,
-    pub debug: bool,
-    pub break_address: Option<u16>,
+pub(crate) struct State {
+    pub(crate) memory: Memory,
+    pub(crate) registers: [u16; 8],
+    pub(crate) pc: u16,
+    pub(crate) condition: Condition,
+    pub(crate) running: bool,
+    pub(crate) debug_continue: bool,
+    pub(crate) debug: bool,
+    pub(crate) break_address: Option<u16>,
 }
 
 impl State {
-    pub fn new(debug: bool) -> State {
+    pub(crate) fn new(debug: bool) -> State {
         State {
             memory: [0; std::u16::MAX as usize],
             registers: [0; 8],
@@ -32,7 +32,7 @@ impl State {
         }
     }
 
-    pub fn read_memory(&self, address: u16) -> u16 {
+    pub(crate) fn read_memory(&self, address: u16) -> u16 {
         if address == MemoryMappedRegister::KBSR as u16 {
             panic!("KBSR");
         } else if address == MemoryMappedRegister::KBDR  as u16 {
@@ -54,7 +54,7 @@ impl fmt::Debug for State {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Condition {
+pub(crate) enum Condition {
     P = 1 << 0,
     Z = 1 << 1,
     N = 1 << 2,

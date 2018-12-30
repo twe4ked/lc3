@@ -11,7 +11,7 @@ mod utilities;
 use crate::utilities::sign_extend;
 
 #[path = "state.rs"]
-pub mod state;
+pub(crate) mod state;
 use crate::state::*;
 
 #[path = "process.rs"]
@@ -22,7 +22,7 @@ use rustyline;
 use regex::Regex;
 use lazy_static::lazy_static;
 
-pub fn debug(mut state: State) -> State {
+pub(crate) fn debug(mut state: State) -> State {
     let mut rl = rustyline::Editor::<()>::new();
     let readline = rl.readline(&format!("{:#04x}> ", state.pc));
 

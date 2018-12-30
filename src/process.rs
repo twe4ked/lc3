@@ -9,14 +9,14 @@ mod trap_vector;
 use crate::trap_vector::TrapVector;
 
 #[path = "state.rs"]
-pub mod state;
-pub use crate::state::{Condition, State};
+pub(crate) mod state;
+pub(crate) use crate::state::{Condition, State};
 
 #[path = "utilities.rs"]
 mod utilities;
 use crate::utilities::sign_extend;
 
-pub fn process(mut state: State) -> State {
+pub(crate) fn process(mut state: State) -> State {
     let instruction: u16 = state.read_memory(state.pc);
     let opcode = Opcode::from_instruction(instruction);
 
