@@ -1,22 +1,22 @@
 #[path = "opcode.rs"]
 mod opcode;
-use crate::process::opcode::Opcode;
+use crate::opcode::Opcode;
 
 #[path = "trap_vector.rs"]
 mod trap_vector;
-use crate::process::trap_vector::TrapVector;
+use crate::trap_vector::TrapVector;
 
 #[path = "utilities.rs"]
 mod utilities;
-use crate::process::utilities::sign_extend;
+use crate::utilities::sign_extend;
 
 #[path = "state.rs"]
 pub mod state;
-use crate::process::state::*;
+use crate::state::*;
 
-#[path = "proc.rs"]
-mod proc;
-use crate::process::proc::process;
+#[path = "process.rs"]
+mod process;
+use crate::process::process;
 
 use rustyline;
 use regex::Regex;

@@ -3,8 +3,23 @@ use std::fs;
 use std::io::BufReader;
 use byteorder::{BigEndian, ReadBytesExt};
 
-mod process;
-use crate::process::{process, debugger::debug, state::State};
+pub mod state;
+pub use crate::state::*;
+
+pub mod process;
+pub use crate::process::process;
+
+pub mod debugger;
+pub use crate::debugger::debug;
+
+pub mod trap_vector;
+pub use crate::trap_vector::TrapVector;
+
+pub mod utilities;
+pub(crate) use crate::utilities::sign_extend;
+
+pub mod opcode;
+pub use crate::opcode::Opcode;
 
 mod config;
 pub use crate::config::Config;
