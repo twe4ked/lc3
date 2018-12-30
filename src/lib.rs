@@ -4,7 +4,7 @@ use std::io::BufReader;
 use byteorder::{BigEndian, ReadBytesExt};
 
 mod process;
-use crate::process::{process, debug, state::State};
+use crate::process::{process, debugger::debug, state::State};
 
 mod config;
 pub use crate::config::Config;
