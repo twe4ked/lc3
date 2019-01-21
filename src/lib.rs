@@ -6,20 +6,20 @@ use byteorder::{BigEndian, ReadBytesExt};
 pub(crate) mod state;
 pub(crate) use crate::state::*;
 
-pub(crate) mod process;
-pub(crate) use crate::process::process;
+mod process;
+use crate::process::process;
 
-pub(crate) mod debugger;
-pub(crate) use crate::debugger::debug;
+mod debugger;
+use crate::debugger::debug;
 
-pub(crate) mod trap_vector;
-pub(crate) use crate::trap_vector::TrapVector;
+mod trap_vector;
+use crate::trap_vector::TrapVector;
 
-pub(crate) mod utilities;
-pub(crate) use crate::utilities::sign_extend;
+mod utilities;
+use crate::utilities::sign_extend;
 
-pub(crate) mod opcode;
-pub(crate) use crate::opcode::Opcode;
+mod opcode;
+use crate::opcode::Opcode;
 
 pub mod config;
 pub use crate::config::Config;
