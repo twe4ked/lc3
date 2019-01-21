@@ -58,6 +58,10 @@ pub(crate) fn debug(mut state: State) -> State {
                     state.running = false;
                 }
 
+                "" => {
+                    // Allow hitting enter
+                }
+
                 _ => {
                     println!("Unknown command {:?}", line);
                 }
