@@ -1,28 +1,19 @@
+mod config;
+mod debugger;
+mod opcode;
+mod process;
+mod state;
+mod trap_vector;
+mod utilities;
+
+pub use crate::config::Config;
+use byteorder::{BigEndian, ReadBytesExt};
+use crate::debugger::debug;
+use crate::process::process;
+use crate::state::*;
 use std::error::Error;
 use std::fs;
 use std::io::BufReader;
-use byteorder::{BigEndian, ReadBytesExt};
-
-pub(crate) mod state;
-pub(crate) use crate::state::*;
-
-mod process;
-use crate::process::process;
-
-mod debugger;
-use crate::debugger::debug;
-
-mod trap_vector;
-use crate::trap_vector::TrapVector;
-
-mod utilities;
-use crate::utilities::sign_extend;
-
-mod opcode;
-use crate::opcode::Opcode;
-
-pub mod config;
-pub use crate::config::Config;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let mut state = State::new(config.debug);

@@ -1,7 +1,7 @@
+use lc3::Config;
+use lc3;
 use std::env;
 use std::process;
-use lc3;
-use lc3::Config;
 use termios::*;
 
 fn main() {

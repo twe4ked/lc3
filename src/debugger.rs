@@ -1,26 +1,11 @@
-#[path = "opcode.rs"]
-mod opcode;
 use crate::opcode::Opcode;
-
-#[path = "trap_vector.rs"]
-mod trap_vector;
+use crate::state::*;
 use crate::trap_vector::TrapVector;
-
-#[path = "utilities.rs"]
-mod utilities;
 use crate::utilities::sign_extend;
 
-#[path = "state.rs"]
-pub(crate) mod state;
-use crate::state::*;
-
-#[path = "process.rs"]
-mod process;
-use crate::process::process;
-
-use rustyline;
-use regex::Regex;
 use lazy_static::lazy_static;
+use regex::Regex;
+use rustyline;
 
 pub(crate) fn debug(mut state: State) -> State {
     let mut rl = rustyline::Editor::<()>::new();

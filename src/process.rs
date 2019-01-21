@@ -1,20 +1,8 @@
-use std::io::{self, Write};
-
-#[path = "opcode.rs"]
-mod opcode;
 use crate::opcode::Opcode;
-
-#[path = "trap_vector.rs"]
-mod trap_vector;
+use crate::state::{Condition, State};
 use crate::trap_vector::TrapVector;
-
-#[path = "state.rs"]
-pub(crate) mod state;
-pub(crate) use crate::state::{Condition, State};
-
-#[path = "utilities.rs"]
-mod utilities;
 use crate::utilities::sign_extend;
+use std::io::{self, Write};
 
 pub(crate) fn process(mut state: State) -> State {
     let instruction: u16 = state.read_memory(state.pc);
