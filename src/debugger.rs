@@ -83,13 +83,15 @@ pub(crate) fn debug(mut state: State) -> State {
 }
 
 fn disassemble(instruction: u16, opcode: Opcode) {
+    print!("{:?}, {:#016b}, ", opcode, instruction);
+
     match opcode {
         Opcode::BR => {
             let n = (instruction >> 11) & 0x1;
             let z = (instruction >> 10) & 0x1;
             let p = (instruction >> 9) & 0x1;
 
-            println!("{:?}, {:#016b}, n: {}, z: {}, p: {}", opcode, instruction, n, z, p);
+            println!("n: {}, z: {}, p: {}", n, z, p);
         }
 
         Opcode::ADD => {
@@ -97,21 +99,21 @@ fn disassemble(instruction: u16, opcode: Opcode) {
             let r1 = (instruction >> 6) & 0x7;
             let immediate_flag = ((instruction >> 5) & 0x1) == 0x1;
 
-            println!("{:?}, {:#016b}, r0: {}, r1: {}, immediate_flag: {}", opcode, instruction, r0, r1, immediate_flag);
+            println!("r0: {}, r1: {}, immediate_flag: {}", r0, r1, immediate_flag);
         }
 
         Opcode::LD => {
             let r0 = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
 
-            println!("{:?}, {:#016b}, r0: {}, pc_offset: {}", opcode, instruction, r0, pc_offset);
+            println!("r0: {}, pc_offset: {}", r0, pc_offset);
         }
 
         Opcode::ST => {
             let r0 = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
 
-            println!("{:?}, {:#016b}, r0: {}, pc_offset: {}", opcode, instruction, r0, pc_offset);
+            println!("r0: {}, pc_offset: {}", r0, pc_offset);
         }
 
         Opcode::JSR => {
@@ -119,8 +121,7 @@ fn disassemble(instruction: u16, opcode: Opcode) {
             let pc_offset = instruction & 0x1ff;
             let r0 = (instruction >> 6) & 7;
 
-            println!("{:?}, {:#016b}, use_pc_offset: {}, pc_offset: {}, r0: {}",
-                     opcode, instruction, use_pc_offset, pc_offset, r0);
+            println!("use_pc_offset: {}, pc_offset: {}, r0: {}", use_pc_offset, pc_offset, r0);
         }
 
         Opcode::AND => {
@@ -131,8 +132,8 @@ fn disassemble(instruction: u16, opcode: Opcode) {
             let r1 = (instruction >> 6) & 0x7;
             let r2 = (instruction) & 0x7;
 
-            println!("{:?}, {:#016b}, immediate_flag: {}, immediate_value: {}, r0: {}, r1: {}, r2: {}",
-                     opcode, instruction, immediate_flag, immediate_value, r0, r1, r2);
+            println!("immediate_flag: {}, immediate_value: {}, r0: {}, r1: {}, r2: {}",
+                     immediate_flag, immediate_value, r0, r1, r2);
         }
 
         Opcode::LDR => {
@@ -140,7 +141,7 @@ fn disassemble(instruction: u16, opcode: Opcode) {
             let r1 = (instruction >> 6) & 0x7;
             let offset = (instruction) & 0x3f;
 
-            println!("{:?}, {:#016b}, r0: {}, r1: {}, offset: {}", opcode, instruction, r0, r1, offset);
+            println!("r0: {}, r1: {}, offset: {}", r0, r1, offset);
         }
 
         Opcode::STR => {
@@ -148,7 +149,7 @@ fn disassemble(instruction: u16, opcode: Opcode) {
             let r1 = (instruction >> 6) & 0x7;
             let offset = instruction & 0x3f;
 
-            println!("{:?}, {:#016b}, r0: {}, r1: {}, offset: {}", opcode, instruction, r0, r1, offset);
+            println!("r0: {}, r1: {}, offset: {}", r0, r1, offset);
         }
 
         Opcode::UNUSED => {
@@ -159,27 +160,27 @@ fn disassemble(instruction: u16, opcode: Opcode) {
             let r0 = (instruction >> 9) & 0x7;
             let r1 = (instruction >> 6) & 0x7;
 
-            println!("{:?}, {:#016b}, r0: {}, r1: {}", opcode, instruction, r0, r1);
+            println!("r0: {}, r1: {}", r0, r1);
         }
 
         Opcode::LDI => {
             let r0 = (instruction >> 9) & 0x7;
             let pc_offset = sign_extend(instruction & 0x1ff, 9);
 
-            println!("{:?}, {:#016b}, r0: {}, pc_offset: {}", opcode, instruction, r0, pc_offset);
+            println!("r0: {}, pc_offset: {}", r0, pc_offset);
         }
 
         Opcode::STI => {
             let r0 = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
 
-            println!("{:?}, {:#016b}, r0: {}, pc_offset: {}", opcode, instruction, r0, pc_offset);
+            println!("r0: {}, pc_offset: {}", r0, pc_offset);
         }
 
         Opcode::JMP => {
             let r0 = (instruction >> 6) & 0xa;
 
-            println!("{:?}, {:#016b}, r0: {}", opcode, instruction, r0);
+            println!("r0: {}", r0);
         }
 
         Opcode::RESERVED => {
@@ -190,12 +191,12 @@ fn disassemble(instruction: u16, opcode: Opcode) {
             let r0 = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
 
-            println!("{:?}, {:#016b}, r0: {}, pc_offset: {}", opcode, instruction, r0, pc_offset);
+            println!("r0: {}, pc_offset: {}", r0, pc_offset);
         }
 
         Opcode::TRAP => {
             if let Ok(trap_vector) = TrapVector::from_instruction(instruction) {
-                println!("{:?}, {:#016b}, trap_vector: {:?}", opcode, instruction, trap_vector);
+                println!("trap_vector: {:?}", trap_vector);
             }
         }
     }
