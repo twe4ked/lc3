@@ -38,10 +38,16 @@ pub(crate) fn disassemble(instruction: u16, opcode: Opcode) {
 
         Opcode::JSR => {
             let use_pc_offset = (instruction >> 11) & 1;
-            let pc_offset = instruction & 0x1ff;
-            let r0 = (instruction >> 6) & 7;
 
-            println!("use_pc_offset: {}, pc_offset: {}, r0: {}", use_pc_offset, pc_offset, r0);
+            if use_pc_offset == 1 {
+                let pc_offset = instruction & 0x1ff;
+
+                println!("pc_offset: {}", pc_offset);
+            } else {
+                let r0 = (instruction >> 6) & 7;
+
+                println!("(JSRR), r0: {}", r0);
+            }
         }
 
         Opcode::AND => {
