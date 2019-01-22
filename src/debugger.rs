@@ -54,6 +54,14 @@ pub(crate) fn debug(mut state: State) -> State {
                     }
                 }
 
+                "h" | "help" => {
+                    println!("c, continue               Continue execution.");
+                    println!("i, inspect                Inspect state.");
+                    println!("d, disassemble            Disassemble current instruction.");
+                    println!("   read <addr>            Read and display memory address. e.g. read 0x3000");
+                    println!("   break-address <addr>   Break at address. e.g. read 0x3000");
+                }
+
                 "exit" => {
                     state.running = false;
                 }
