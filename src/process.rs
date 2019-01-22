@@ -110,8 +110,8 @@ pub(crate) fn process(mut state: State) -> State {
             let base_r = (instruction >> 6) & 0x7;
             let offset = instruction & 0x3f;
 
-            let address = state.registers[sr as usize];
-            let value = state.registers[base_r as usize].wrapping_add(sign_extend(offset, 6));
+            let address = state.registers[base_r as usize].wrapping_add(sign_extend(offset, 6));
+            let value = state.registers[sr as usize];
 
             state.memory[address as usize] = value;
         }
@@ -456,7 +456,7 @@ mod tests {
 
         let state = process(state);
 
-        assert_eq!(state.memory[42], 2 + 3);
+        assert_eq!(state.memory[2 + 3], 42);
     }
 
     #[test]
