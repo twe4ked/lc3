@@ -83,7 +83,7 @@ pub(crate) fn debug(mut state: State) -> State {
 }
 
 fn disassemble(instruction: u16, opcode: Opcode) {
-    print!("{:?}, {:#016b}, ", opcode, instruction);
+    print!("{:?}, {:08b}_{:08b}, ", opcode, (instruction >> 8) & 0xff, instruction & 0xff);
 
     match opcode {
         Opcode::BR => {
