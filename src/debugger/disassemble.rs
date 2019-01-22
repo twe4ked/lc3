@@ -75,7 +75,7 @@ pub(crate) fn disassemble(instruction: u16, opcode: Opcode) {
             let r1 = (instruction >> 6) & 0x7;
             let offset = instruction & 0x3f;
 
-            println!("r0: {}, r1: {}, offset: {}", r0, r1, offset);
+            println!("r0: {:#04x}, r1: {:#04x}, offset: {:#04x}", r0, r1, offset);
         }
 
         Opcode::UNUSED => {
