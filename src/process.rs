@@ -43,7 +43,7 @@ pub(crate) fn process(mut state: State) -> State {
                     state.registers[r1 as usize].wrapping_add(state.registers[r2 as usize]);
             }
 
-            state = update_flags(state, r0);
+            state.update_flags(r0);
         }
 
         Opcode::LD => {
@@ -52,8 +52,7 @@ pub(crate) fn process(mut state: State) -> State {
             let address = state.pc.wrapping_add(sign_extend(pc_offset, 9));
 
             state.registers[r0 as usize] = state.memory[address as usize];
-
-            state = update_flags(state, r0);
+            state.update_flags(r0);
         }
 
         Opcode::ST => {
@@ -101,9 +100,9 @@ pub(crate) fn process(mut state: State) -> State {
             let offset = (instruction) & 0x3f;
 
             let address = state.registers[r1 as usize].wrapping_add(sign_extend(offset, 6));
-            state.registers[r0 as usize] = state.read_memory(address);
 
-            state = update_flags(state, r0);
+            state.registers[r0 as usize] = state.read_memory(address);
+            state.update_flags(r0);
         }
 
         Opcode::STR => {
@@ -126,7 +125,7 @@ pub(crate) fn process(mut state: State) -> State {
             let r1 = (instruction >> 6) & 0x7;
 
             state.registers[r0 as usize] = !state.registers[r1 as usize];
-            state = update_flags(state, r0);
+            state.update_flags(r0);
         }
 
         Opcode::LDI => {
@@ -135,8 +134,7 @@ pub(crate) fn process(mut state: State) -> State {
             let address = state.pc.wrapping_add(pc_offset);
 
             state.registers[r0 as usize] = state.read_memory(address);
-
-            state = update_flags(state, r0);
+            state.update_flags(r0);
         }
 
         Opcode::STI => {
@@ -204,19 +202,6 @@ pub(crate) fn process(mut state: State) -> State {
                 }
             }
         }
-    }
-
-    state
-}
-
-fn update_flags(mut state: State, r: u16) -> State {
-    if state.registers[r as usize] == 0 {
-        state.condition = Condition::Z;
-    } else if (state.registers[r as usize] >> 15) == 1 {
-        // NOTE: A 1 in the left-most bit indicates negative
-        state.condition = Condition::N;
-    } else {
-        state.condition = Condition::P;
     }
 
     state

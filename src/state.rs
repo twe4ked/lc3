@@ -45,6 +45,19 @@ impl State {
             0
         }
     }
+
+    pub(crate) fn update_flags(&mut self, r: u16) -> &State {
+        if self.registers[r as usize] == 0 {
+            self.condition = Condition::Z;
+        } else if (self.registers[r as usize] >> 15) == 1 {
+            // NOTE: A 1 in the left-most bit indicates negative
+            self.condition = Condition::N;
+        } else {
+            self.condition = Condition::P;
+        }
+
+        self
+    }
 }
 
 impl fmt::Debug for State {
