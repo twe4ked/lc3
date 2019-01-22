@@ -30,8 +30,16 @@ pub(crate) fn debug(mut state: State) -> State {
                     state.debug_continue = true;
                 }
 
-                "i" | "inspect" => {
-                    println!("{:?}, op_code: {:?}, instruction: {:#4x}, {:#016b}", state, opcode, instruction, instruction);
+                "condition" => {
+                    println!("{:?}", state.condition);
+                }
+
+                "r" | "registers" => {
+                    let mut i = 0;
+                    while i < 8 {
+                        println!("r{}: {:#04x}", i, state.registers[i]);
+                        i = i + 1;
+                    }
                 }
 
                 "d" | "disassemble" => {
@@ -56,7 +64,8 @@ pub(crate) fn debug(mut state: State) -> State {
 
                 "h" | "help" => {
                     println!("c, continue               Continue execution.");
-                    println!("i, inspect                Inspect state.");
+                    println!("r, registers              Print registers.");
+                    println!("   condition              Print condition.");
                     println!("d, disassemble            Disassemble current instruction.");
                     println!("   read <addr>            Read and display memory address. e.g. read 0x3000");
                     println!("   break-address <addr>   Break at address. e.g. read 0x3000");
