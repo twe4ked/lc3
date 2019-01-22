@@ -66,11 +66,11 @@ pub(crate) fn process(mut state: State) -> State {
         Opcode::JSR => {
             let temp = state.pc;
             let use_pc_offset = (instruction >> 11) & 1;
-            let pc_offset = instruction & 0x1ff;
+            let pc_offset = instruction & 0x7ff;
             let r0 = (instruction >> 6) & 7;
 
             if use_pc_offset == 1 {
-                state.pc = state.pc.wrapping_add(sign_extend(pc_offset, 9));
+                state.pc = state.pc.wrapping_add(sign_extend(pc_offset, 11));
             } else {
                 state.pc = state.registers[r0 as usize];
             }
@@ -366,14 +366,16 @@ mod tests {
     fn process_jsr_use_pc_offset() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0100_1_00000000011;
-        //                       ^    ^ `pc_offset (k)
+        state.memory[0x3000] = 0b0100_1_10000000011;
+        //                       ^    ^ `pc_offset (1027)
         //                       `JSR |
         //                            `use pc_offset
 
         let state = process(state);
 
-        assert_eq!(state.pc, 0x3000 + 1 + 3);
+        assert_eq!(state.pc, (0x3001 as u16).wrapping_add(0b11111100_00000011));
+        //                      `incremented pc           ^
+        //                                                `sign extended 1027
         assert_eq!(state.registers[7], 0x3001);
     }
 
