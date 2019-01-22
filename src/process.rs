@@ -169,6 +169,9 @@ pub(crate) fn process(mut state: State) -> State {
             if let Ok(trap_vector) = TrapVector::from_instruction(instruction) {
                 match trap_vector {
                     TrapVector::GETC => {
+                        // Read a single character from the keyboard. The character is not echoed
+                        // onto the console. Its ASCII code is copied into R0. The high eight bits
+                        // of R0 are cleared.
                         panic!("not implemented: {:?}", trap_vector);
                     }
 
