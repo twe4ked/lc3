@@ -147,7 +147,7 @@ pub(crate) fn process(mut state: State) -> State {
         }
 
         Opcode::JMP => {
-            let r0 = (instruction >> 6) & 0xa;
+            let r0 = (instruction >> 6) & 0x7;
 
             state.pc = state.registers[r0 as usize];
         }
@@ -277,6 +277,21 @@ mod tests {
         let state = process(state);
 
         assert_eq!(state.pc, 5);
+    }
+
+    #[test]
+    fn process_jmp_ret() {
+        let mut state = new_state();
+
+        state.memory[0x3000] = 0b1100_000_111_000000;
+        //                       ^        `register
+        //                       `JMP
+
+        state.registers[7] = 42;
+
+        let state = process(state);
+
+        assert_eq!(state.pc, 42);
     }
 
     #[test]
