@@ -106,12 +106,12 @@ pub(crate) fn process(mut state: State) -> State {
         }
 
         Opcode::STR => {
-            let r0 = (instruction >> 9) & 0x7;
-            let r1 = (instruction >> 6) & 0x7;
+            let sr = (instruction >> 9) & 0x7;
+            let base_r = (instruction >> 6) & 0x7;
             let offset = instruction & 0x3f;
 
-            let address = state.registers[r0 as usize];
-            let value = state.registers[r1 as usize].wrapping_add(sign_extend(offset, 6));
+            let address = state.registers[sr as usize];
+            let value = state.registers[base_r as usize].wrapping_add(sign_extend(offset, 6));
 
             state.memory[address as usize] = value;
         }
