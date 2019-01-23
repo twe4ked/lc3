@@ -131,7 +131,7 @@ pub(crate) fn process(mut state: State) -> State {
         Opcode::LDI => {
             let dr = (instruction >> 9) & 0x7;
             let pc_offset = sign_extend(instruction & 0x1ff, 9);
-            let address = state.pc.wrapping_add(pc_offset);
+            let address = state.read_memory(state.pc.wrapping_add(pc_offset));
 
             state.registers[dr as usize] = state.read_memory(address);
             state.update_flags(dr);
@@ -256,7 +256,8 @@ mod tests {
         //                       `LDI     `pc_offset
 
         state.memory[0x3001] = 0x3002;
-        state.memory[0x3002] = 42;
+        state.memory[0x3002] = 0x3003;
+        state.memory[0x3003] = 42;
 
         let state = process(state);
 
