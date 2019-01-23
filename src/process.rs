@@ -129,12 +129,12 @@ pub(crate) fn process(mut state: State) -> State {
         }
 
         Opcode::LDI => {
-            let r0 = (instruction >> 9) & 0x7;
+            let dr = (instruction >> 9) & 0x7;
             let pc_offset = sign_extend(instruction & 0x1ff, 9);
             let address = state.pc.wrapping_add(pc_offset);
 
-            state.registers[r0 as usize] = state.read_memory(address);
-            state.update_flags(r0);
+            state.registers[dr as usize] = state.read_memory(address);
+            state.update_flags(dr);
         }
 
         Opcode::STI => {

@@ -90,10 +90,10 @@ pub(crate) fn disassemble(instruction: u16, opcode: Opcode) {
         }
 
         Opcode::LDI => {
-            let r0 = (instruction >> 9) & 0x7;
+            let dr = (instruction >> 9) & 0x7;
             let pc_offset = sign_extend(instruction & 0x1ff, 9);
 
-            println!("r0: {}, pc_offset: {}", r0, pc_offset);
+            println!("dr: {}, pc_offset: {}", dr, pc_offset);
         }
 
         Opcode::STI => {
