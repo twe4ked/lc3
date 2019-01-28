@@ -174,7 +174,7 @@ pub(crate) fn process(mut state: State) -> State {
                     }
 
                     TrapVector::OUT => {
-                        panic!("not implemented: {:?}", trap_vector);
+                        print!("{}", char::from(state.registers[0] as u8));
                     }
 
                     TrapVector::PUTS => {
