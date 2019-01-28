@@ -8,15 +8,15 @@ mod utilities;
 
 pub use crate::config::Config;
 use byteorder::{BigEndian, ReadBytesExt};
-use crate::debugger::debug;
-use crate::process::process;
+use crate::debugger::run as run_debugger;
+use crate::process::run as run_processor;
 use crate::state::*;
 use std::error::Error;
 use std::fs;
 use std::io::BufReader;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let mut state = State::new(config.debug);
+    let mut state = State::new();
 
     let buffer = read_file(config.filename);
     let starting_address = buffer[0];
@@ -27,27 +27,10 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         i += 1
     }
 
-    while state.running {
-        if state.debug {
-            let mut should_break = true;
-
-            if let Some(break_address) = state.break_address {
-                if break_address == state.pc {
-                    state.break_address = None;
-                    should_break = true;
-                } else {
-                    should_break = false;
-                }
-            }
-
-            while state.running && !state.debug_continue && should_break {
-                state = debug(state);
-            }
-
-            state.debug_continue = false;
-        }
-
-        state = process(state)
+    if config.debug {
+        run_debugger(state)
+    } else {
+        run_processor(state)
     }
 
     Ok(())

@@ -4,6 +4,12 @@ use crate::trap_vector::TrapVector;
 use crate::utilities::sign_extend;
 use std::io::{self, Write, Read};
 
+pub(crate) fn run(mut state: State) {
+    while state.running {
+        state = process(state)
+    }
+}
+
 pub(crate) fn process(mut state: State) -> State {
     let instruction: u16 = state.read_memory(state.pc);
     let opcode = Opcode::from_instruction(instruction);
@@ -539,6 +545,6 @@ mod tests {
     }
 
     fn new_state() -> State {
-        State::new(false)
+        State::new()
     }
 }

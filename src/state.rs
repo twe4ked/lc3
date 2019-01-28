@@ -16,12 +16,11 @@ pub(crate) struct State {
     pub(crate) condition: Condition,
     pub(crate) running: bool,
     pub(crate) debug_continue: bool,
-    pub(crate) debug: bool,
     pub(crate) break_address: Option<u16>,
 }
 
 impl State {
-    pub(crate) fn new(debug: bool) -> State {
+    pub(crate) fn new() -> State {
         State {
             memory: [0; std::u16::MAX as usize],
             registers: [0; 8],
@@ -29,7 +28,6 @@ impl State {
             condition: Condition::P,
             running: true,
             debug_continue: false,
-            debug: debug,
             break_address: None,
         }
     }

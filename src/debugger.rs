@@ -3,9 +3,33 @@ mod disassemble;
 use crate::debugger::disassemble::disassemble;
 use crate::opcode::Opcode;
 use crate::state::*;
+use crate::process::process;
 use lazy_static::lazy_static;
 use regex::Regex;
 use rustyline;
+
+pub(crate) fn run(mut state: State) {
+    while state.running {
+        let mut should_break = true;
+
+        if let Some(break_address) = state.break_address {
+            if break_address == state.pc {
+                state.break_address = None;
+                should_break = true;
+            } else {
+                should_break = false;
+            }
+        }
+
+        while state.running && !state.debug_continue && should_break {
+            state = debug(state);
+        }
+
+        state.debug_continue = false;
+
+        state = process(state)
+    }
+}
 
 pub(crate) fn debug(mut state: State) -> State {
     let mut rl = rustyline::Editor::<()>::new();
