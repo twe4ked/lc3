@@ -10,7 +10,7 @@ fn main() {
         println!("Problem parsing arguments: {}", err);
         process::exit(1);
     });
-    let termios = Termios::from_fd(0).unwrap_or_else(|err| {
+    let termios = Termios::from_fd(libc::STDIN_FILENO).unwrap_or_else(|err| {
         println!("An error occured: {}", err);
         process::exit(1);
     });
