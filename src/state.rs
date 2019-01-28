@@ -1,4 +1,6 @@
-use std::fmt;
+use std::{fmt, io};
+use std::io::Read;
+use libc;
 
 pub(crate) type Memory = [u16; std::u16::MAX as usize];
 
@@ -32,11 +34,14 @@ impl State {
         }
     }
 
-    pub(crate) fn read_memory(&self, address: u16) -> u16 {
+    pub(crate) fn read_memory(&mut self, address: u16) -> u16 {
         if address == MemoryMappedRegister::KBSR as u16 {
-            panic!("KBSR");
-        } else if address == MemoryMappedRegister::KBDR  as u16 {
-            panic!("KBDR");
+            if check_key() {
+                self.memory[MemoryMappedRegister::KBSR as usize] = 1 << 15;
+                self.memory[MemoryMappedRegister::KBDR as usize] = get_char();
+            } else {
+                self.memory[MemoryMappedRegister::KBSR as usize] = 0;
+            }
         }
 
         if address < std::u16::MAX {
@@ -71,4 +76,36 @@ pub(crate) enum Condition {
     P = 1 << 0,
     Z = 1 << 1,
     N = 1 << 2,
+}
+
+fn check_key() -> bool {
+    unsafe {
+        let mut readfds = std::mem::uninitialized::<libc::fd_set>();
+        libc::FD_ZERO(&mut readfds);
+        libc::FD_SET(libc::STDIN_FILENO, &mut readfds);
+
+        let mut writefds = std::mem::uninitialized::<libc::fd_set>();
+        libc::FD_ZERO(&mut writefds);
+
+        let mut errorfds = std::mem::uninitialized::<libc::fd_set>();
+        libc::FD_ZERO(&mut errorfds);
+
+        libc::select(
+            libc::STDOUT_FILENO,
+            &mut readfds,
+            &mut writefds,
+            &mut errorfds,
+            &mut libc::timeval {
+                tv_sec: 0,
+                tv_usec: 0,
+            },
+        ) != 0
+    }
+}
+
+fn get_char() -> u16 {
+    let mut buffer = [0; 1];
+    io::stdin().read_exact(&mut buffer).unwrap();
+
+    buffer[0] as u16
 }
