@@ -2,7 +2,7 @@ use crate::opcode::Opcode;
 use crate::state::{Condition, State};
 use crate::trap_vector::TrapVector;
 use crate::utilities::sign_extend;
-use std::io::{self, Write};
+use std::io::{self, Write, Read};
 
 pub(crate) fn process(mut state: State) -> State {
     let instruction: u16 = state.read_memory(state.pc);
@@ -170,7 +170,10 @@ pub(crate) fn process(mut state: State) -> State {
                         // Read a single character from the keyboard. The character is not echoed
                         // onto the console. Its ASCII code is copied into R0. The high eight bits
                         // of R0 are cleared.
-                        panic!("not implemented: {:?}", trap_vector);
+                        let mut buffer = [0; 1];
+                        io::stdin().read_exact(&mut buffer).unwrap();
+
+                        state.registers[0] = buffer[0] as u16;
                     }
 
                     TrapVector::OUT => {
