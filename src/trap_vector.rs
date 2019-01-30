@@ -1,6 +1,11 @@
 #[derive(Debug)]
 pub(crate) enum TrapVector {
-    GETC, OUT, PUTS, IN, PUTSP, HALT,
+    GETC,
+    OUT,
+    PUTS,
+    IN,
+    PUTSP,
+    HALT,
 }
 
 impl TrapVector {

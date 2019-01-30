@@ -1,6 +1,6 @@
-use std::{fmt, io};
-use std::io::Read;
 use libc;
+use std::io::Read;
+use std::{fmt, io};
 
 pub(crate) type Memory = [u16; std::u16::MAX as usize];
 
@@ -65,7 +65,11 @@ impl State {
 
 impl fmt::Debug for State {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "registers: {:?}, condition: {:?}", self.registers, self.condition)
+        write!(
+            f,
+            "registers: {:?}, condition: {:?}",
+            self.registers, self.condition
+        )
     }
 }
 

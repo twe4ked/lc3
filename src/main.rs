@@ -1,5 +1,5 @@
-use lc3::Config;
 use lc3;
+use lc3::Config;
 use std::env;
 use std::process;
 use termios::*;

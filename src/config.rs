@@ -35,7 +35,10 @@ mod tests {
     fn config_valid_arguments() {
         let args = [String::from("program_name"), String::from("filename")].to_vec();
 
-        assert_eq!(Config::new(&args).unwrap().filename, String::from("filename"));
+        assert_eq!(
+            Config::new(&args).unwrap().filename,
+            String::from("filename")
+        );
         assert_eq!(Config::new(&args).unwrap().debug, false);
     }
 
@@ -48,17 +51,33 @@ mod tests {
 
     #[test]
     fn config_with_debug() {
-        let args = [String::from("program_name"), String::from("filename"), String::from("--debug")].to_vec();
+        let args = [
+            String::from("program_name"),
+            String::from("filename"),
+            String::from("--debug"),
+        ]
+        .to_vec();
 
-        assert_eq!(Config::new(&args).unwrap().filename, String::from("filename"));
+        assert_eq!(
+            Config::new(&args).unwrap().filename,
+            String::from("filename")
+        );
         assert_eq!(Config::new(&args).unwrap().debug, true);
     }
 
     #[test]
     fn config_with_debug_first() {
-        let args = [String::from("program_name"), String::from("--debug"), String::from("filename")].to_vec();
+        let args = [
+            String::from("program_name"),
+            String::from("--debug"),
+            String::from("filename"),
+        ]
+        .to_vec();
 
-        assert_eq!(Config::new(&args).unwrap().filename, String::from("filename"));
+        assert_eq!(
+            Config::new(&args).unwrap().filename,
+            String::from("filename")
+        );
         assert_eq!(Config::new(&args).unwrap().debug, true);
     }
 }

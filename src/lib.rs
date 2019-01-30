@@ -7,10 +7,10 @@ mod trap_vector;
 mod utilities;
 
 pub use crate::config::Config;
-use byteorder::{BigEndian, ReadBytesExt};
 use crate::debugger::run as run_debugger;
 use crate::process::run as run_processor;
 use crate::state::*;
+use byteorder::{BigEndian, ReadBytesExt};
 use std::error::Error;
 use std::fs;
 use std::io::BufReader;
@@ -37,18 +37,24 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 }
 
 fn read_file(filename: String) -> Vec<u16> {
-    let file_size = fs::metadata(filename.clone()).expect("could not get file meta data").len() as usize;
+    let file_size = fs::metadata(filename.clone())
+        .expect("could not get file meta data")
+        .len() as usize;
     if &file_size % 2 != 0 {
         panic!("file was not even number of bytes long");
     }
-    let array_size = file_size/2;
+    let array_size = file_size / 2;
 
     let file = fs::File::open(filename).expect("failed to open file");
     let mut buf_reader = BufReader::new(file);
 
     let mut buffer: Vec<u16> = Vec::with_capacity(array_size);
-    unsafe { buffer.set_len(array_size); }
-    buf_reader.read_u16_into::<BigEndian>(&mut buffer[..]).expect("failed to read");
+    unsafe {
+        buffer.set_len(array_size);
+    }
+    buf_reader
+        .read_u16_into::<BigEndian>(&mut buffer[..])
+        .expect("failed to read");
 
     buffer
 }

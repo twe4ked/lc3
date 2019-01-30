@@ -2,13 +2,13 @@ mod disassemble;
 
 use crate::debugger::disassemble::disassemble;
 use crate::opcode::Opcode;
-use crate::state::*;
 use crate::process::process;
+use crate::state::*;
 use lazy_static::lazy_static;
 use regex::Regex;
 use resp;
-use std::net::TcpListener;
 use std::io::{BufReader, BufWriter, Write};
+use std::net::TcpListener;
 
 pub(crate) fn run(mut state: State) {
     let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
@@ -31,12 +31,14 @@ pub(crate) fn run(mut state: State) {
                 }
 
                 while state.running && !state.debug_continue && should_break {
-                    let instruction : u16 = state.read_memory(state.pc);
+                    let instruction: u16 = state.read_memory(state.pc);
                     let opcode = Opcode::from_instruction(instruction);
 
                     lazy_static! {
-                        static ref READ_REGEX: Regex = Regex::new(r"^read 0x([a-f0-9]{1,4})$").unwrap();
-                        static ref BREAK_ADDRESS_REGEX: Regex = Regex::new(r"^break-address 0x([a-f0-9]{1,4})$").unwrap();
+                        static ref READ_REGEX: Regex =
+                            Regex::new(r"^read 0x([a-f0-9]{1,4})$").unwrap();
+                        static ref BREAK_ADDRESS_REGEX: Regex =
+                            Regex::new(r"^break-address 0x([a-f0-9]{1,4})$").unwrap();
                     }
 
                     state.debug_continue = false;
@@ -74,39 +76,57 @@ pub(crate) fn run(mut state: State) {
 
                                         "r" | "registers" => {
                                             let mut s = vec![];
-                                            for (i, register) in state.registers.iter().enumerate() {
+                                            for (i, register) in state.registers.iter().enumerate()
+                                            {
                                                 s.push(format!("r{}: {:#04x}", i, register));
                                             }
                                             string_to_send = s.join("\n");
                                         }
 
                                         "d" | "disassemble" => {
-                                            string_to_send = format!("{:?}, {:08b}_{:08b}, {}",
-                                                                     opcode.clone(), (instruction >> 8) & 0xff, instruction & 0xff,
-                                                                     disassemble(instruction, opcode))
+                                            string_to_send = format!(
+                                                "{:?}, {:08b}_{:08b}, {}",
+                                                opcode.clone(),
+                                                (instruction >> 8) & 0xff,
+                                                instruction & 0xff,
+                                                disassemble(instruction, opcode)
+                                            )
                                         }
 
                                         line if READ_REGEX.is_match(line) => {
-                                            if let Some(address) = READ_REGEX.captures(line).unwrap().get(1) {
-                                                let address = u16::from_str_radix(address.as_str(), 16).unwrap();
+                                            if let Some(address) =
+                                                READ_REGEX.captures(line).unwrap().get(1)
+                                            {
+                                                let address =
+                                                    u16::from_str_radix(address.as_str(), 16)
+                                                        .unwrap();
                                                 let value = state.read_memory(address);
-                                                string_to_send = format!("{:#04x}, {:#016b}", value, value);
+                                                string_to_send =
+                                                    format!("{:#04x}, {:#016b}", value, value);
                                             } else {
                                                 string_to_send = "Error".to_string();
                                             }
                                         }
 
                                         line if BREAK_ADDRESS_REGEX.is_match(line) => {
-                                            if let Some(address) = BREAK_ADDRESS_REGEX.captures(line).unwrap().get(1) {
-                                                let address = u16::from_str_radix(address.as_str(), 16).unwrap();
+                                            if let Some(address) =
+                                                BREAK_ADDRESS_REGEX.captures(line).unwrap().get(1)
+                                            {
+                                                let address =
+                                                    u16::from_str_radix(address.as_str(), 16)
+                                                        .unwrap();
                                                 state.break_address = Some(address);
-                                                string_to_send = format!("Break address set to {:#04x}", address);
+                                                string_to_send = format!(
+                                                    "Break address set to {:#04x}",
+                                                    address
+                                                );
                                             } else {
                                                 string_to_send = "Error".to_string();
                                             }
                                         }
 
-                                        "h" | "help" => { // TODO: Help is a builtin command
+                                        "h" | "help" => {
+                                            // TODO: Help is a builtin command
                                             string_to_send = [
                                                 "c, continue               Continue execution.",
                                                 "r, registers              Print registers.",
@@ -127,15 +147,17 @@ pub(crate) fn run(mut state: State) {
                                         }
                                     }
                                 }
-                                _ => panic!("Unknown value: {:?}", value)
+                                _ => panic!("Unknown value: {:?}", value),
                             }
-                        },
+                        }
                         Err(e) => panic!("Error parsing response {:?}", e),
                     }
 
-                    match BufWriter::new(&stream).write(&resp::Value::String(string_to_send).encode()) {
-                        Ok(_) => { }
-                        Err(_) => { }
+                    match BufWriter::new(&stream)
+                        .write(&resp::Value::String(string_to_send).encode())
+                    {
+                        Ok(_) => {}
+                        Err(_) => {}
                     }
                 }
 
@@ -143,7 +165,7 @@ pub(crate) fn run(mut state: State) {
 
                 state = process(state);
             }
-        },
+        }
         Err(e) => println!("Couldn't get client: {:?}", e),
     }
 }

@@ -2,7 +2,7 @@ use crate::opcode::Opcode;
 use crate::state::{Condition, State};
 use crate::trap_vector::TrapVector;
 use crate::utilities::sign_extend;
-use std::io::{self, Write, Read};
+use std::io::{self, Read, Write};
 
 pub(crate) fn run(mut state: State) {
     while state.running {

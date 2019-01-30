@@ -1,6 +1,21 @@
 #[derive(Debug, Clone)]
 pub(crate) enum Opcode {
-    BR, ADD, LD, ST, JSR, AND, LDR, STR, UNUSED, NOT, LDI, STI, JMP, RESERVED, LEA, TRAP,
+    BR,
+    ADD,
+    LD,
+    ST,
+    JSR,
+    AND,
+    LDR,
+    STR,
+    UNUSED,
+    NOT,
+    LDI,
+    STI,
+    JMP,
+    RESERVED,
+    LEA,
+    TRAP,
 }
 
 impl Opcode {

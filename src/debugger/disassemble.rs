@@ -56,8 +56,10 @@ pub(crate) fn disassemble(instruction: u16, opcode: Opcode) -> String {
             let r1 = (instruction >> 6) & 0x7;
             let r2 = (instruction) & 0x7;
 
-            format!("immediate_flag: {}, immediate_value: {}, r0: {}, r1: {}, r2: {}",
-                     immediate_flag, immediate_value, r0, r1, r2)
+            format!(
+                "immediate_flag: {}, immediate_value: {}, r0: {}, r1: {}, r2: {}",
+                immediate_flag, immediate_value, r0, r1, r2
+            )
         }
 
         Opcode::LDR => {
@@ -73,7 +75,10 @@ pub(crate) fn disassemble(instruction: u16, opcode: Opcode) -> String {
             let base_r = (instruction >> 6) & 0x7;
             let offset = instruction & 0x3f;
 
-            format!("sr: {:#04x}, base_r: {:#04x}, offset: {:#04x}", sr, base_r, offset)
+            format!(
+                "sr: {:#04x}, base_r: {:#04x}, offset: {:#04x}",
+                sr, base_r, offset
+            )
         }
 
         Opcode::UNUSED => {
