@@ -5,7 +5,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(args: &Vec<String>) -> Result<Config, &'static str> {
+    pub fn with(args: &[String]) -> Result<Config, &'static str> {
         if args.len() < 2 {
             return Err("not enough arguments");
         }
@@ -36,17 +36,17 @@ mod tests {
         let args = [String::from("program_name"), String::from("filename")].to_vec();
 
         assert_eq!(
-            Config::new(&args).unwrap().filename,
+            Config::with(&args).unwrap().filename,
             String::from("filename")
         );
-        assert_eq!(Config::new(&args).unwrap().debug, false);
+        assert_eq!(Config::with(&args).unwrap().debug, false);
     }
 
     #[test]
     fn config_not_enough_arguments() {
         let args = [String::from("program_name")].to_vec();
 
-        assert_eq!(Config::new(&args), Err("not enough arguments"));
+        assert_eq!(Config::with(&args), Err("not enough arguments"));
     }
 
     #[test]
@@ -59,10 +59,10 @@ mod tests {
         .to_vec();
 
         assert_eq!(
-            Config::new(&args).unwrap().filename,
+            Config::with(&args).unwrap().filename,
             String::from("filename")
         );
-        assert_eq!(Config::new(&args).unwrap().debug, true);
+        assert_eq!(Config::with(&args).unwrap().debug, true);
     }
 
     #[test]
@@ -75,9 +75,9 @@ mod tests {
         .to_vec();
 
         assert_eq!(
-            Config::new(&args).unwrap().filename,
+            Config::with(&args).unwrap().filename,
             String::from("filename")
         );
-        assert_eq!(Config::new(&args).unwrap().debug, true);
+        assert_eq!(Config::with(&args).unwrap().debug, true);
     }
 }

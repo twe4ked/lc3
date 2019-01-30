@@ -139,7 +139,7 @@ pub(crate) fn run(mut state: State) {
 
                                         "exit" => {
                                             state.running = false;
-                                            string_to_send = format!("Exiting...");
+                                            string_to_send = "Exiting...".to_string();
                                         }
 
                                         _ => {
@@ -153,12 +153,9 @@ pub(crate) fn run(mut state: State) {
                         Err(e) => panic!("Error parsing response {:?}", e),
                     }
 
-                    match BufWriter::new(&stream)
-                        .write(&resp::Value::String(string_to_send).encode())
-                    {
-                        Ok(_) => {}
-                        Err(_) => {}
-                    }
+                    BufWriter::new(&stream)
+                        .write_all(&resp::Value::String(string_to_send).encode())
+                        .unwrap();
                 }
 
                 state.debug_continue = false;

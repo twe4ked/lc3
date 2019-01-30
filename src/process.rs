@@ -179,7 +179,7 @@ pub(crate) fn process(mut state: State) -> State {
                         let mut buffer = [0; 1];
                         io::stdin().read_exact(&mut buffer).unwrap();
 
-                        state.registers[0] = buffer[0] as u16;
+                        state.registers[0] = u16::from(buffer[0]);
                     }
 
                     TrapVector::OUT => {

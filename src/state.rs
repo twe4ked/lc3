@@ -75,7 +75,7 @@ impl fmt::Debug for State {
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum Condition {
-    P = 1 << 0,
+    P = 1,
     Z = 1 << 1,
     N = 1 << 2,
 }
@@ -109,5 +109,5 @@ fn get_char() -> u16 {
     let mut buffer = [0; 1];
     io::stdin().read_exact(&mut buffer).unwrap();
 
-    buffer[0] as u16
+    u16::from(buffer[0])
 }
