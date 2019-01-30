@@ -15,7 +15,7 @@ fn main() {
         process::exit(1);
     });
 
-    disable_input_buffering(termios.clone());
+    disable_input_buffering(termios);
 
     if let Err(e) = lc3::run(config) {
         enable_input_buffering(termios);
@@ -30,14 +30,14 @@ fn main() {
 fn disable_input_buffering(mut termios: Termios) {
     termios.c_lflag &= !(ICANON | ECHO);
 
-    tcsetattr(0, TCSANOW, &mut termios).unwrap_or_else(|err| {
+    tcsetattr(0, TCSANOW, &termios).unwrap_or_else(|err| {
         println!("An error occured: {}", err);
         process::exit(1);
     });
 }
 
-fn enable_input_buffering(mut termios: Termios) {
-    tcsetattr(0, TCSANOW, &mut termios).unwrap_or_else(|err| {
+fn enable_input_buffering(termios: Termios) {
+    tcsetattr(0, TCSANOW, &termios).unwrap_or_else(|err| {
         println!("An error occured: {}", err);
         process::exit(1);
     });
