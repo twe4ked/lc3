@@ -2,8 +2,8 @@ use crate::opcode::Opcode;
 use crate::trap_vector::TrapVector;
 use crate::utilities::sign_extend;
 
-pub(crate) fn disassemble(instruction: u16, opcode: Opcode) -> String {
-    match opcode {
+pub(crate) fn disassemble(instruction: u16) -> String {
+    match Opcode::from_instruction(instruction) {
         Opcode::BR => {
             let n = (instruction >> 11) & 0x1;
             let z = (instruction >> 10) & 0x1;

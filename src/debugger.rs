@@ -31,9 +31,6 @@ pub(crate) fn run(mut state: State) {
                 }
 
                 while state.running && !state.debug_continue && should_break {
-                    let instruction: u16 = state.read_memory(state.pc);
-                    let opcode = Opcode::from_instruction(instruction);
-
                     lazy_static! {
                         static ref READ_REGEX: Regex =
                             Regex::new(r"^read 0x([a-f0-9]{1,4})$").unwrap();
@@ -84,12 +81,15 @@ pub(crate) fn run(mut state: State) {
                                         }
 
                                         "d" | "disassemble" => {
+                                            let instruction: u16 = state.read_memory(state.pc);
+                                            let opcode = Opcode::from_instruction(instruction);
+
                                             string_to_send = format!(
                                                 "{:?}, {:08b}_{:08b}, {}",
-                                                opcode.clone(),
+                                                opcode,
                                                 (instruction >> 8) & 0xff,
                                                 instruction & 0xff,
-                                                disassemble(instruction, opcode)
+                                                disassemble(instruction)
                                             )
                                         }
 

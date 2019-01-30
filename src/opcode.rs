@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) enum Opcode {
     BR,
     ADD,
