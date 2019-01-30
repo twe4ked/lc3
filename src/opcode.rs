@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Opcode {
     BR, ADD, LD, ST, JSR, AND, LDR, STR, UNUSED, NOT, LDI, STI, JMP, RESERVED, LEA, TRAP,
 }

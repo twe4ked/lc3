@@ -7,7 +7,7 @@ edition="2018"
 [dependencies]
 byteorder = "1"
 termios = "0.3"
-rustyline = "3"
 regex = "1"
 lazy_static = "1.2.0"
 libc = "0.2"
+resp = "1"
