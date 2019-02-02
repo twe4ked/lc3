@@ -2,5 +2,4 @@
 
 ## TODO
 
-- Move debugger input to RESP so `redis-cli` can be used as an external debugger
 - Finish implementing TRAP codes
