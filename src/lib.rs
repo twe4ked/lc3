@@ -9,7 +9,7 @@ mod utilities;
 pub use crate::config::Config;
 use crate::debugger::run as run_debugger;
 use crate::process::run as run_processor;
-use crate::state::*;
+use crate::state::State;
 use byteorder::{BigEndian, ReadBytesExt};
 use std::error::Error;
 use std::fs;
