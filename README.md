@@ -24,6 +24,13 @@ From a separate shell:
 
 ```
 $ redis-cli
+127.0.0.1:6379> h
+c, continue               Continue execution.
+r, registers              Print registers.
+   condition              Print condition.
+d, disassemble            Disassemble current instruction.
+   read <addr>            Read and display memory address. e.g. read 0x3000
+   break-address <addr>   Break at address. e.g. read 0x3000
 ```
 
 ## TODO
