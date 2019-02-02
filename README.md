@@ -29,3 +29,7 @@ $ redis-cli
 ## TODO
 
 - Finish implementing TRAP codes
+
+## More info
+
+- http://highered.mheducation.com/sites/0072467509/student_view0/lc-3_simulator.html
