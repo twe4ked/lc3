@@ -11,9 +11,7 @@ use crate::debugger::run as run_debugger;
 use crate::process::run as run_processor;
 use crate::state::State;
 use byteorder::{BigEndian, ReadBytesExt};
-use std::error::Error;
-use std::fs;
-use std::io::BufReader;
+use std::{error::Error, fs, io::BufReader};
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let mut state = State::new();
