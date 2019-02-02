@@ -15,8 +15,7 @@ use crate::state::State;
 use std::error::Error;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let mut state = State::new();
-    state = load_file(config.filename, state)?;
+    let state = load_file(config.filename, State::new())?;
 
     if config.debug {
         run_debugger(state)
