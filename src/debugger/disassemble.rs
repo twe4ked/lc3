@@ -1,6 +1,6 @@
 use crate::opcode::Opcode;
 use crate::trap_vector::TrapVector;
-use crate::utilities::sign_extend;
+use crate::SignExtend;
 
 pub(crate) fn disassemble(instruction: u16) -> String {
     match Opcode::from_instruction(instruction) {
@@ -50,7 +50,7 @@ pub(crate) fn disassemble(instruction: u16) -> String {
 
         Opcode::AND => {
             let immediate_flag = ((instruction >> 5) & 1) == 1;
-            let immediate_value = sign_extend(instruction & 0x1f, 5);
+            let immediate_value = (instruction & 0x1f).sign_extend(5);
 
             let r0 = (instruction >> 9) & 0x7;
             let r1 = (instruction >> 6) & 0x7;
@@ -94,7 +94,7 @@ pub(crate) fn disassemble(instruction: u16) -> String {
 
         Opcode::LDI => {
             let dr = (instruction >> 9) & 0x7;
-            let pc_offset = sign_extend(instruction & 0x1ff, 9);
+            let pc_offset = (instruction & 0x1ff).sign_extend(9);
 
             format!("dr: {}, pc_offset: {}", dr, pc_offset)
         }

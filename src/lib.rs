@@ -3,14 +3,15 @@ mod debugger;
 mod file_loader;
 mod opcode;
 mod process;
+mod sign_extend;
 mod state;
 mod trap_vector;
-mod utilities;
 
 pub use crate::config::Config;
 use crate::debugger::run as run_debugger;
 use crate::file_loader::load_file;
 use crate::process::run as run_processor;
+use crate::sign_extend::SignExtend;
 use crate::state::State;
 use std::error::Error;
 
