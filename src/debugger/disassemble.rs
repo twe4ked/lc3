@@ -82,7 +82,7 @@ pub(crate) fn disassemble(instruction: u16) -> String {
         }
 
         Opcode::UNUSED => {
-            panic!("unused");
+            unimplemented!();
         }
 
         Opcode::NOT => {
@@ -113,7 +113,7 @@ pub(crate) fn disassemble(instruction: u16) -> String {
         }
 
         Opcode::RESERVED => {
-            panic!("reserved");
+            unimplemented!();
         }
 
         Opcode::LEA => {

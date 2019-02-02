@@ -123,7 +123,7 @@ pub(crate) fn process(mut state: State) -> State {
         }
 
         Opcode::UNUSED => {
-            panic!("unused");
+            unimplemented!();
         }
 
         Opcode::NOT => {
@@ -159,7 +159,7 @@ pub(crate) fn process(mut state: State) -> State {
         }
 
         Opcode::RESERVED => {
-            panic!("reserved");
+            unimplemented!();
         }
 
         Opcode::LEA => {
@@ -198,11 +198,11 @@ pub(crate) fn process(mut state: State) -> State {
                     }
 
                     TrapVector::IN => {
-                        panic!("not implemented: {:?}", trap_vector);
+                        unimplemented!();
                     }
 
                     TrapVector::PUTSP => {
-                        panic!("not implemented: {:?}", trap_vector);
+                        unimplemented!();
                     }
 
                     TrapVector::HALT => {
