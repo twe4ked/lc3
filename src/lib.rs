@@ -17,15 +17,7 @@ use std::io::BufReader;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let mut state = State::new();
-
-    let buffer = read_file(config.filename);
-    let starting_address = buffer[0];
-
-    let mut i = 0;
-    while i < (buffer.len() - 1) {
-        state.memory[(starting_address as usize) + i] = buffer[i + 1];
-        i += 1
-    }
+    state = load_file(config.filename, state)?;
 
     if config.debug {
         run_debugger(state)
@@ -36,25 +28,23 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn read_file(filename: String) -> Vec<u16> {
-    let file_size = fs::metadata(filename.clone())
-        .expect("could not get file meta data")
-        .len() as usize;
-    if &file_size % 2 != 0 {
-        panic!("file was not even number of bytes long");
+fn load_file(filename: String, mut state: State) -> Result<State, std::io::Error> {
+    let mut reader = BufReader::new(fs::File::open(filename)?);
+    let mut address = usize::from(reader.read_u16::<BigEndian>()?);
+
+    loop {
+        match reader.read_u16::<BigEndian>() {
+            Ok(instruction) => {
+                state.memory[address] = instruction;
+                address += 1;
+            }
+            Err(e) => {
+                return if e.kind() == std::io::ErrorKind::UnexpectedEof {
+                    Ok(state)
+                } else {
+                    Err(e)
+                };
+            }
+        }
     }
-    let array_size = file_size / 2;
-
-    let file = fs::File::open(filename).expect("failed to open file");
-    let mut buf_reader = BufReader::new(file);
-
-    let mut buffer: Vec<u16> = Vec::with_capacity(array_size);
-    unsafe {
-        buffer.set_len(array_size);
-    }
-    buf_reader
-        .read_u16_into::<BigEndian>(&mut buffer[..])
-        .expect("failed to read");
-
-    buffer
 }
