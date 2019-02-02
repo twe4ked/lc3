@@ -1,5 +1,6 @@
 mod config;
 mod debugger;
+mod file_loader;
 mod opcode;
 mod process;
 mod state;
@@ -8,10 +9,10 @@ mod utilities;
 
 pub use crate::config::Config;
 use crate::debugger::run as run_debugger;
+use crate::file_loader::load_file;
 use crate::process::run as run_processor;
 use crate::state::State;
-use byteorder::{BigEndian, ReadBytesExt};
-use std::{error::Error, fs, io::BufReader};
+use std::error::Error;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let mut state = State::new();
@@ -24,25 +25,4 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
-}
-
-fn load_file(filename: String, mut state: State) -> Result<State, std::io::Error> {
-    let mut reader = BufReader::new(fs::File::open(filename)?);
-    let mut address = usize::from(reader.read_u16::<BigEndian>()?);
-
-    loop {
-        match reader.read_u16::<BigEndian>() {
-            Ok(instruction) => {
-                state.memory[address] = instruction;
-                address += 1;
-            }
-            Err(e) => {
-                return if e.kind() == std::io::ErrorKind::UnexpectedEof {
-                    Ok(state)
-                } else {
-                    Err(e)
-                };
-            }
-        }
-    }
 }
