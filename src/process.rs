@@ -520,20 +520,25 @@ pub(crate) fn process(mut state: State) -> State {
         Opcode::TRAP => {
             if let Ok(trap_vector) = TrapVector::from_instruction(instruction) {
                 match trap_vector {
+                    // Read a single character from the keyboard. The character is not echoed
+                    // onto the console. Its ASCII code is copied into R0. The high eight bits
+                    // of R0 are cleared.
                     TrapVector::GETC => {
-                        // Read a single character from the keyboard. The character is not echoed
-                        // onto the console. Its ASCII code is copied into R0. The high eight bits
-                        // of R0 are cleared.
                         let mut buffer = [0; 1];
                         io::stdin().read_exact(&mut buffer).unwrap();
 
                         state.registers[0] = u16::from(buffer[0]);
                     }
 
+                    // Write a character in R0[7:0] to the console display.
                     TrapVector::OUT => {
                         print!("{}", char::from(state.registers[0] as u8));
                     }
 
+                    // Write a string of ASCII characters to the console display. The characters
+                    // are contained in consecutive memory locations, one character per memory
+                    // location, starting with the address specified in R0. Writing terminates with
+                    // the occurrence of x0000 in a memory location.
                     TrapVector::PUTS => {
                         let mut i: u16 = state.registers[0];
 
@@ -545,14 +550,27 @@ pub(crate) fn process(mut state: State) -> State {
                         io::stdout().flush().unwrap();
                     }
 
+                    // Print a prompt on the screen and read a single character from the keyboard.
+                    // The character is echoed onto the console monitor, and its ASCII code is
+                    // copied into R0. The high eight bits of R0 are cleared.
                     TrapVector::IN => {
                         unimplemented!();
                     }
 
+                    // Write a string of ASCII characters to the console. The characters are
+                    // contained in consecutive memory locations, two characters per memory
+                    // location, starting with the address specified in R0. The ASCII code
+                    // contained in bits [7:0] of a memory location is written to the console
+                    // first. Then the ASCII code contained in bits [15:8] of that memory location
+                    // is written to the console. (A character string consisting of an odd number
+                    // of characters to be written will have x00 in bits [15:8] of the memory
+                    // location containing the last character to be written.) Writing terminates
+                    // with the occurrence of x0000 in a memory location.
                     TrapVector::PUTSP => {
                         unimplemented!();
                     }
 
+                    // Halt execution and print a message on the console.
                     TrapVector::HALT => {
                         state.running = false;
                     }
