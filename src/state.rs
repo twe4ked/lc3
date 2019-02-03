@@ -1,4 +1,8 @@
 use libc;
+use nix::sys::{
+    select::{select, FdSet},
+    time::{TimeVal, TimeValLike},
+};
 use std::io::Read;
 use std::{fmt, io};
 
@@ -81,27 +85,12 @@ pub(crate) enum Condition {
 }
 
 fn check_key() -> bool {
-    unsafe {
-        let mut readfds = std::mem::uninitialized::<libc::fd_set>();
-        libc::FD_ZERO(&mut readfds);
-        libc::FD_SET(libc::STDIN_FILENO, &mut readfds);
+    let mut readfds = FdSet::new();
+    readfds.insert(libc::STDIN_FILENO);
 
-        let mut writefds = std::mem::uninitialized::<libc::fd_set>();
-        libc::FD_ZERO(&mut writefds);
-
-        let mut errorfds = std::mem::uninitialized::<libc::fd_set>();
-        libc::FD_ZERO(&mut errorfds);
-
-        libc::select(
-            libc::STDOUT_FILENO,
-            &mut readfds,
-            &mut writefds,
-            &mut errorfds,
-            &mut libc::timeval {
-                tv_sec: 0,
-                tv_usec: 0,
-            },
-        ) != 0
+    match select(None, &mut readfds, None, None, &mut TimeVal::zero()) {
+        Ok(value) => value == 1,
+        Err(_) => false,
     }
 }
 
