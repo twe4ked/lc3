@@ -1,6 +1,4 @@
-use crate::opcode::Opcode;
-use crate::trap_vector::TrapVector;
-use crate::SignExtend;
+use crate::{opcode::Opcode, trap_vector::TrapVector, SignExtend};
 
 pub(crate) fn disassemble(instruction: u16) -> String {
     match Opcode::from_instruction(instruction) {

@@ -1,7 +1,9 @@
-use crate::opcode::Opcode;
-use crate::state::{Condition, State};
-use crate::trap_vector::TrapVector;
-use crate::SignExtend;
+use crate::{
+    opcode::Opcode,
+    state::{Condition, State},
+    trap_vector::TrapVector,
+    SignExtend,
+};
 use std::io::{self, Read, Write};
 
 pub(crate) fn process(mut state: State) -> State {

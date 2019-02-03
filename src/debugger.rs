@@ -1,13 +1,13 @@
 mod disassemble;
 
-use crate::debugger::disassemble::disassemble;
-use crate::opcode::Opcode;
-use crate::state::State;
+use crate::{debugger::disassemble::disassemble, opcode::Opcode, state::State};
 use lazy_static::lazy_static;
 use regex::Regex;
 use resp;
-use std::io::{BufReader, BufWriter, Write};
-use std::net::TcpListener;
+use std::{
+    io::{BufReader, BufWriter, Write},
+    net::TcpListener,
+};
 
 pub(crate) fn run(mut state: State) {
     let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
