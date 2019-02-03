@@ -19,7 +19,7 @@ impl TrapVector {
             0x23 => TrapVector::IN,
             0x24 => TrapVector::PUTSP,
             0x25 => TrapVector::HALT,
-            _ => unreachable!("bad TRAP vector: {:x}", value),
+            _ => unreachable!("bad TRAP vector: {:#04x}", value),
         }
     }
 }
