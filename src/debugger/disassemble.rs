@@ -121,12 +121,9 @@ pub(crate) fn disassemble(instruction: u16) -> String {
             format!("r0: {}, pc_offset: {}", r0, pc_offset)
         }
 
-        Opcode::TRAP => {
-            if let Ok(trap_vector) = TrapVector::from_instruction(instruction) {
-                format!("trap_vector: {:?}", trap_vector)
-            } else {
-                "Unknown trap vector".to_string()
-            }
-        }
+        Opcode::TRAP => format!(
+            "trap_vector: {:?}",
+            TrapVector::from_instruction(instruction)
+        ),
     }
 }

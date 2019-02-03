@@ -39,7 +39,7 @@ impl Opcode {
             0x0d => Opcode::RESERVED,
             0x0e => Opcode::LEA,
             0x0f => Opcode::TRAP,
-            _ => panic!("bad opcode: {}", value),
+            _ => unreachable!("bad opcode: {}", value),
         }
     }
 }

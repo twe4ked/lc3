@@ -9,17 +9,17 @@ pub(crate) enum TrapVector {
 }
 
 impl TrapVector {
-    pub(crate) fn from_instruction(instruction: u16) -> Result<TrapVector, String> {
+    pub(crate) fn from_instruction(instruction: u16) -> TrapVector {
         let value = instruction & 0xFF;
 
         match value {
-            0x20 => Ok(TrapVector::GETC),
-            0x21 => Ok(TrapVector::OUT),
-            0x22 => Ok(TrapVector::PUTS),
-            0x23 => Ok(TrapVector::IN),
-            0x24 => Ok(TrapVector::PUTSP),
-            0x25 => Ok(TrapVector::HALT),
-            _ => Err(format!("bad TRAP vector: {:x}", value)),
+            0x20 => TrapVector::GETC,
+            0x21 => TrapVector::OUT,
+            0x22 => TrapVector::PUTS,
+            0x23 => TrapVector::IN,
+            0x24 => TrapVector::PUTSP,
+            0x25 => TrapVector::HALT,
+            _ => unreachable!("bad TRAP vector: {:x}", value),
         }
     }
 }
