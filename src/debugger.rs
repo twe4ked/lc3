@@ -2,8 +2,7 @@ mod disassemble;
 
 use crate::debugger::disassemble::disassemble;
 use crate::opcode::Opcode;
-use crate::process::process;
-use crate::state::*;
+use crate::state::State;
 use lazy_static::lazy_static;
 use regex::Regex;
 use resp;
@@ -160,7 +159,7 @@ pub(crate) fn run(mut state: State) {
 
                 state.debug_continue = false;
 
-                state = process(state);
+                state = state.process();
             }
         }
         Err(e) => println!("Couldn't get client: {:?}", e),

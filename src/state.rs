@@ -1,3 +1,6 @@
+mod instructions;
+
+use instructions::process as process_instruction;
 use libc;
 use nix::sys::{
     select::{select, FdSet},
@@ -63,6 +66,10 @@ impl State {
         }
 
         self
+    }
+
+    pub(crate) fn process(self) -> State {
+        process_instruction(self)
     }
 }
 
