@@ -17,6 +17,34 @@ pub(crate) fn process(mut state: State) -> State {
     state.pc = state.pc.wrapping_add(1);
 
     match opcode {
+        // BR - Conditional Branch
+        //
+        // Assembler Formats
+        //
+        //      BRn     LABEL   BRzp    LABEL
+        //      BRz     LABEL   BRnp    LABEL
+        //      BRp     LABEL   BRnz    LABEL
+        //      BR[1]   LABEL   BRnzp   LABEL
+        //
+        // Encoding
+        //
+        //      |0 0 0 0|0|0|0|0 0 0 0 0 0 0 0 0|
+        //      |BR     |n|p|z|pc_offset_9      |
+        //
+        // Description
+        //
+        // The condition codes specified by the state of bits [11:9] are tested. If bit [11] is
+        // set, N is tested; if bit [11] is clear, N is not tested. If bit [10] is set, Z is
+        // tested, etc. If any of the condition codes tested is set, the program branches to the
+        // location specified by adding the sign-extended PCoffset9 field to the incremented PC.
+        //
+        // Examples
+        //
+        //      BRzp LOOP    ; Branch to LOOP if the last result was zero or positive.
+        //      BR[1] NEXT   ; Unconditionally branch to NEXT.
+        //
+        // [1]: The assembly language opcode BR is interpreted the same as BRnzp; that is, always
+        // branch to the target address.
         Opcode::BR => {
             let n = (instruction >> 11) & 0x1;
             let z = (instruction >> 10) & 0x1;
@@ -32,6 +60,35 @@ pub(crate) fn process(mut state: State) -> State {
             }
         }
 
+        // ADD - Addition
+        //
+        // Assembler Formats
+        //
+        //      ADD DR, SR1, SR2
+        //      ADD DR, SR1, imm5
+        //
+        // Encodings
+        //
+        //      |0 0 0 1|0 0 0|0 0 0|0|0 0|0 0 0|
+        //      |ADD    |DR   |SR1  |x|   |SR2  |
+        //
+        //      |0 0 0 1|0 0 0|0 0 0|1|0 0|0 0 0|
+        //      |ADD    |DR   |SR1  |x|imm_5    |
+        //
+        //      x: bit [5] (immidiate_flag)
+        //
+        // Description
+        //
+        // If bit [5] is 0, the second source operand is obtained from SR2. If bit [5] is 1, the
+        // second source operand is obtained by sign-extending the imm5 field to 16 bits. In both
+        // cases, the second source operand is added to the contents of SR1 and the result stored
+        // in DR. The condition codes are set, based on whether the result is negative, zero, or
+        // positive.
+        //
+        // Examples
+        //
+        //      ADD R2, R3, R4 ; R2 <- R3 + R4
+        //      ADD R2, R3, #7 ; R2 <- R3 + 7
         Opcode::ADD => {
             let r0 = (instruction >> 9) & 0x7;
             let r1 = (instruction >> 6) & 0x7;
@@ -52,6 +109,27 @@ pub(crate) fn process(mut state: State) -> State {
             state.update_flags(r0);
         }
 
+        // LD - Load
+        //
+        // Assembler Format
+        //
+        //      LD DR, LABEL
+        //
+        // Encoding
+        //
+        //      |0 0 1 0|0 0 0|0 0 0 0 0 0 0 0 0|
+        //      |LD     |DR   |pc_offset_9      |
+        //
+        // Description
+        //
+        // An address is computed by sign-extending bits [8:0] to 16 bits and adding this value to
+        // the incremented PC. The contents of memory at this address are loaded into DR. The
+        // condition codes are set, based on whether the value loaded is negative, zero, or
+        // positive.
+        //
+        // Example
+        //
+        //      LD R4, VALUE ; R4 <- mem[VALUE]
         Opcode::LD => {
             let r0 = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
@@ -61,6 +139,26 @@ pub(crate) fn process(mut state: State) -> State {
             state.update_flags(r0);
         }
 
+        // ST - Store
+        //
+        // Assembler Format
+        //
+        //      ST SR, LABEL
+        //
+        // Encoding
+        //
+        //      |0 0 1 1|0 0 0|0 0 0 0 0 0 0 0 0|
+        //      |ST     |DR   |pc_offset_9      |
+        //
+        // Description
+        //
+        // The contents of the register specified by SR are stored in the memory location whose
+        // address is computed by sign-extending bits [8:0] to 16 bits and adding this value to the
+        // incremented PC.
+        //
+        // Example
+        //
+        //      ST R4, HERE ; mem[HERE] <- R4
         Opcode::ST => {
             let r0 = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
@@ -69,6 +167,39 @@ pub(crate) fn process(mut state: State) -> State {
             state.memory[address as usize] = state.registers[r0 as usize];
         }
 
+        // JSR - Jump to Subroutine
+        // JSRR
+        //
+        // Assembler Formats
+        //
+        //      JSR LABEL
+        //      JSRR BaseR
+        //
+        // Encoding
+        //
+        //      |0 1 0 0|1|0 0 0 0 0 0 0 0 0 0 0|
+        //      |JSR    |x|pc_offset_11         |
+        //
+        //      |0 1 0 0|0|0 0|0 0 0 0 0 0 0 0 0|
+        //      |JSRR   |x|   |BR   |           |
+        //
+        //      x: bit [11] (use_pc_offset)
+        //
+        // Description
+        //
+        // First, the incremented PC is saved in a temporary location. Then the PC is loaded with
+        // the address of the first instruction of the subroutine, causing an unconditional jump to
+        // that address. The address of the subroutine is obtained from the base register (if bit
+        // [11] is 0), or the address is computed by sign-extending bits [10:0] and adding this
+        // value to the incremented PC (if bit [11] is 1). Finally, R7 is loaded with the value
+        // stored in the temporary location. This is the linkage back to the calling routine.
+        //
+        // Examples
+        //
+        //      JSR QUEUE    ; Put the address of the instruction following JSR into R7;
+        //                   ; Jump to QUEUE.
+        //      JSRR R3      ; Put the address following JSRR into R7; Jump to the
+        //                   ; address contained in R3.
         Opcode::JSR => {
             let temp = state.pc;
             let use_pc_offset = (instruction >> 11) & 1;
@@ -84,6 +215,35 @@ pub(crate) fn process(mut state: State) -> State {
             state.registers[7] = temp;
         }
 
+        // AND - Bit-wise Logical AND
+        //
+        // Assembler Formats
+        //
+        //      AND DR, SR1, SR2
+        //      AND DR, SR1, imm5
+        //
+        // Encodings
+        //
+        //      |0 1 0 1|0 0 0|0 0 0|0|0 0|0 0 0|
+        //      |AND    |DR   |SR1  |x|   |SR2  |
+        //
+        //      |0 1 0 1|0 0 0|0 0 0|1|0 0|0 0 0|
+        //      |AND    |DR   |SR1  |x|imm_5    |
+        //
+        //      x: bit [5] (immidiate_flag)
+        //
+        // Description
+        //
+        // If bit [5] is 0, the second source operand is obtained from SR2. If bit [5] is 1, the
+        // second source operand is obtained by sign-extending the imm5 field to 16 bits. In either
+        // case, the second source operand and the contents of SR1 are bit-wise ANDed, and the
+        // result stored in DR. The condition codes are set, based on whether the binary value
+        // produced, taken as a 2’s complement integer, is negative, zero, or positive.
+        //
+        // Examples
+        //
+        //      AND R2, R3, R4 ;R2 <- R3 AND R4
+        //      AND R2, R3, #7 ;R2 <- R3 AND 7
         Opcode::AND => {
             let immediate_flag = ((instruction >> 5) & 1) == 1;
             let immediate_value = (instruction & 0x1f).sign_extend(5);
@@ -100,6 +260,27 @@ pub(crate) fn process(mut state: State) -> State {
             }
         }
 
+        // LDR - Load Base+offset
+        //
+        // Assembler Format
+        //
+        //      LDR DR, BaseR, offset6
+        //
+        // Encoding
+        //
+        //      |0 1 1 0|0 0 0|0 0 0 0 0 0 0 0 0|
+        //      |LDR    |DR   |BR   |offset_6   |
+        //
+        // Description
+        //
+        // An address is computed by sign-extending bits [5:0] to 16 bits and adding this value to
+        // the contents of the register specified by bits [8:6]. The contents of memory at this
+        // address are loaded into DR. The condition codes are set, based on whether the value
+        // loaded is negative, zero, or positive.
+        //
+        // Example
+        //
+        // LDR R4, R2, #−5 ; R4 <- mem[R2 − 5]
         Opcode::LDR => {
             let r0 = (instruction >> 9) & 0x7;
             let r1 = (instruction >> 6) & 0x7;
@@ -111,6 +292,26 @@ pub(crate) fn process(mut state: State) -> State {
             state.update_flags(r0);
         }
 
+        // STR - Store Base+offset
+        //
+        // Assembler Format
+        //
+        //      STR SR, BaseR, offset6
+        //
+        // Encoding
+        //
+        //      |0 1 1 1|0 0 0|0 0 0 0 0 0 0 0 0|
+        //      |STR    |SR   |BR   |offset_6   |
+        //
+        // Description
+        //
+        // The contents of the register specified by SR are stored in the memory location whose
+        // address is computed by sign-extending bits [5:0] to 16 bits and adding this value to the
+        // contents of the register specified by bits [8:6].
+        //
+        // Example
+        //
+        // STR R4, R2, #5 ; mem[R2 + 5] <- R4
         Opcode::STR => {
             let sr = (instruction >> 9) & 0x7;
             let base_r = (instruction >> 6) & 0x7;
@@ -126,6 +327,26 @@ pub(crate) fn process(mut state: State) -> State {
             unimplemented!();
         }
 
+        // NOT - Bit-Wise Complement
+        //
+        // Assembler Format
+        //
+        //      NOT DR, SR
+        //
+        // Encoding
+        //
+        //      |1 0 0 1|0 0 0|0 0 0 0 0 0 0 0 0|
+        //      |NOT    |DR   |SR   |1|1 1 1 1 1|
+        //
+        // Description
+        //
+        // The bit-wise complement of the contents of SR is stored in DR. The condition codes are
+        // set, based on whether the binary value produced, taken as a 2’s complement integer, is
+        // negative, zero, or positive.
+        //
+        // Example
+        //
+        // NOT R4, R2 ; R4 <- NOT(R2)
         Opcode::NOT => {
             let r0 = (instruction >> 9) & 0x7;
             let r1 = (instruction >> 6) & 0x7;
@@ -134,6 +355,27 @@ pub(crate) fn process(mut state: State) -> State {
             state.update_flags(r0);
         }
 
+        // LDI - Load Indirect
+        //
+        // Assembler Format
+        //
+        //      LDI DR, LABEL
+        //
+        // Encoding
+        //
+        // Description
+        //
+        //      |1 0 1 0|0 0 0|0 0 0 0 0 0 0 0 0|
+        //      |LDI    |DR   |pc_offset_9      |
+        //
+        // An address is computed by sign-extending bits [8:0] to 16 bits and adding this value to
+        // the incremented PC. What is stored in memory at this address is the address of the data
+        // to be loaded into DR. The condition codes are set, based on whether the value loaded is
+        // negative, zero, or positive.
+        //
+        // Example
+        //
+        //      LDI R4, ONEMORE ; R4 <- mem[mem[ONEMORE]]
         Opcode::LDI => {
             let dr = (instruction >> 9) & 0x7;
             let pc_offset = (instruction & 0x1ff).sign_extend(9);
@@ -143,6 +385,27 @@ pub(crate) fn process(mut state: State) -> State {
             state.update_flags(dr);
         }
 
+        // STI - Store Indirect
+        //
+        // Assembler Format
+        //
+        //      STI SR, LABEL
+        //
+        // Encoding
+        //
+        //      |1 0 1 1|0 0 0|0 0 0 0 0 0 0 0 0|
+        //      |STI    |SR   |pc_offset_9      |
+        //
+        // Description
+        //
+        // The contents of the register specified by SR are stored in the memory location whose
+        // address is obtained as follows: Bits [8:0] are sign-extended to 16 bits and added to the
+        // incremented PC. What is in memory at this address is the address of the location to
+        // which the data in SR is stored.
+        //
+        // Example
+        //
+        // STI R4, NOT_HERE ; mem[mem[NOT_HERE]] <- R4
         Opcode::STI => {
             let r0 = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
@@ -152,6 +415,37 @@ pub(crate) fn process(mut state: State) -> State {
             state.memory[state.read_memory(address) as usize] = state.registers[r0 as usize];
         }
 
+        // JMP - Jump
+        // RET - Return from Subroutine
+        //
+        // Assembler Formats
+        //
+        //      JMP BaseR
+        //      RET
+        //
+        // Encoding
+        //
+        //      |1 1 0 0|0 0 0|0 0 0|0 0 0 0 0 0|
+        //      |JMP    |     |BR   |           |
+        //
+        //      |1 1 0 0|0 0 0|1 1 1|0 0 0 0 0 0|
+        //      |RET    |     |1 1 1|           |
+        //
+        // Description
+        //
+        // The program unconditionally jumps to the location specified by the contents of
+        // the base register. Bits [8:6] identify the base register.
+        //
+        // Examples
+        //
+        //      JMP R2 ; PC <0 R2
+        //      RET ; PC <- R7
+        //
+        // Note
+        //
+        // The RET instruction is a special case of the JMP instruction. The PC is loaded with the
+        // contents of R7, which contains the linkage back to the instruction following the
+        // subroutine call instruction.
         Opcode::JMP => {
             let r0 = (instruction >> 6) & 0x7;
 
@@ -162,6 +456,29 @@ pub(crate) fn process(mut state: State) -> State {
             unimplemented!();
         }
 
+        // LEA - Load Effective Address
+        //
+        // Assembler Format
+        //
+        //      LEA DR, LABEL
+        //
+        // Encoding
+        //
+        //      |1 1 1 0|0 0 0|0 0 0|0 0 0 0 0 0|
+        //      |LEA    |DR   |pc_offset_9      |
+        //
+        // Description
+        //
+        // An address is computed by sign-extending bits [8:0] to 16 bits and adding this value to
+        // the incremented PC. This address is loaded into DR.[1] The condition codes are set,
+        // based on whether the value loaded is negative, zero, or positive.
+        //
+        // [1]: The LEA instruction does not read memory to obtain the information to load into DR.
+        // The address itself is loaded into DR.
+        //
+        // Example
+        //
+        // LEA R4, TARGET ; R4 <- address of TARGET.
         Opcode::LEA => {
             let r0 = (instruction >> 9) & 0x7;
             let pc_offset = instruction & 0x1ff;
@@ -169,6 +486,37 @@ pub(crate) fn process(mut state: State) -> State {
             state.registers[r0 as usize] = state.pc.wrapping_add(pc_offset.sign_extend(9));
         }
 
+        // TRAP - System Call
+        //
+        // Assembler Format
+        //
+        //      TRAP trapvector8
+        //
+        // Encoding
+        //
+        //      |1 1 1 1|0 0 0 0|0 0 0 0 0 0 0 0|
+        //      |TRAP   |       |trap_vector_8  |
+        //
+        // Description
+        //
+        // First R7 is loaded with the incremented PC. (This enables a return to the instruction
+        // physically following the TRAP instruction in the original program after the service
+        // routine has completed execution.) Then the PC is loaded with the starting address of the
+        // system call specified by trapvector8. The starting address is contained in the memory
+        // location whose address is obtained by zero-extending trapvector8 to 16 bits.
+        //
+        // Example
+        //
+        //      TRAP x23    ; Directs the operating system to execute the IN system call.
+        //                  ; The starting address of this system call is contained in
+        //                  ; memory location x0023.
+        //
+        // Note
+        //
+        // Memory locations x0000 through x00FF, 256 in all, are available to contain starting
+        // addresses for system calls specified by their corresponding trap vectors. This region of
+        // memory is called the Trap Vector Table. Table A.2 describes the functions performed
+        // by the service routines corresponding to trap vectors x20 to x25.
         Opcode::TRAP => {
             if let Ok(trap_vector) = TrapVector::from_instruction(instruction) {
                 match trap_vector {
