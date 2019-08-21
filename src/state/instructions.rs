@@ -7,8 +7,8 @@ use std::io::{self, Read, Write};
 
 #[derive(Debug)]
 pub enum Instruction {
-    BR(bool, bool, bool),
-    ADD(u16, u16, bool),
+    BR(bool, bool, bool, u16),
+    ADD(u16, u16, u16, bool, u16),
     LD(u16, u16),
     ST(u16, u16),
     JSR(bool, u16, u16),
@@ -34,16 +34,19 @@ impl Instruction {
                 let n = ((instruction >> 11) & 0x1) == 1;
                 let z = ((instruction >> 10) & 0x1) == 1;
                 let p = ((instruction >> 9) & 0x1) == 1;
+                let pc_offset = instruction & 0x1ff;
 
-                Instruction::BR(n, z, p)
+                Instruction::BR(n, z, p, pc_offset)
             }
 
             0x01 => {
                 let r0 = (instruction >> 9) & 0x7;
                 let r1 = (instruction >> 6) & 0x7;
+                let r2 = instruction & 0x7;
                 let immediate_flag = ((instruction >> 5) & 0x1) == 0x1;
+                let immediate_value = (instruction & 0x1f).sign_extend(5);
 
-                Instruction::ADD(r0, r1, immediate_flag)
+                Instruction::ADD(r0, r1, r2, immediate_flag, immediate_value)
             }
 
             0x02 => {
@@ -178,13 +181,11 @@ pub fn process(mut state: State) -> State {
         //
         // [1]: The assembly language opcode BR is interpreted the same as BRnzp; that is, always
         // branch to the target address.
-        Instruction::BR(n, z, p) => {
+        Instruction::BR(n, z, p, pc_offset) => {
             if (n && state.condition == Condition::N)
                 || (z && state.condition == Condition::Z)
                 || (p && state.condition == Condition::P)
             {
-                let pc_offset = instruction & 0x1ff;
-
                 state.pc = state.pc.wrapping_add(pc_offset.sign_extend(9));
             }
         }
@@ -218,18 +219,12 @@ pub fn process(mut state: State) -> State {
         //
         //      ADD R2, R3, R4 ; R2 <- R3 + R4
         //      ADD R2, R3, #7 ; R2 <- R3 + 7
-        Instruction::ADD(r0, r1, immediate_flag) => {
-            if immediate_flag {
-                let immediate_value = (instruction & 0x1f).sign_extend(5);
-
-                state.registers[r0 as usize] =
-                    state.registers[r1 as usize].wrapping_add(immediate_value);
+        Instruction::ADD(r0, r1, r2, immediate_flag, immediate_value) => {
+            state.registers[r0 as usize] = if immediate_flag {
+                state.registers[r1 as usize].wrapping_add(immediate_value)
             } else {
-                let r2 = instruction & 0x7;
-
-                state.registers[r0 as usize] =
-                    state.registers[r1 as usize].wrapping_add(state.registers[r2 as usize]);
-            }
+                state.registers[r1 as usize].wrapping_add(state.registers[r2 as usize])
+            };
 
             state.update_flags(r0);
         }
