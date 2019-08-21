@@ -7,7 +7,7 @@ use std::{
     net::TcpListener,
 };
 
-pub fn run(mut state: State) {
+pub fn debug(mut state: State) {
     let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
 
     println!("Waiting for redis-cli connection...");
