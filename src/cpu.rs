@@ -657,6 +657,86 @@ mod tests {
     }
 
     #[test]
+    fn process_br_z_true() {
+        let mut state = new_state();
+
+        state.memory.write(0x3000, 0b0000_0_1_0_000000101);
+        //                           ^      `z  `pc_offset (5)
+        //                           `BR
+
+        state.condition = Condition::Z;
+
+        let state = step(state);
+
+        // incremented pc + 5
+        assert_eq!(state.pc, 0x3006);
+    }
+
+    #[test]
+    fn process_br_z_false() {
+        let mut state = new_state();
+
+        state.memory.write(0x3000, 0b0000_0_1_0_000000101);
+        //                           ^      `z  `pc_offset (5)
+        //                           `BR
+
+        state.condition = Condition::P;
+
+        let state = step(state);
+
+        // incremented pc + 1 (ingores the pc_offset)
+        assert_eq!(state.pc, 0x3001);
+    }
+
+    #[test]
+    fn process_br_p_true() {
+        let mut state = new_state();
+
+        state.memory.write(0x3000, 0b0000_0_0_1_000000101);
+        //                           ^        ^ `pc_offset (5)
+        //                           `BR      `p
+
+        state.condition = Condition::P;
+
+        let state = step(state);
+
+        // incremented pc + 5
+        assert_eq!(state.pc, 0x3006);
+    }
+
+    #[test]
+    fn process_br_p_false() {
+        let mut state = new_state();
+
+        state.memory.write(0x3000, 0b0000_0_0_1_000000101);
+        //                           ^        ^ `pc_offset (5)
+        //                           `BR      `p
+
+        state.condition = Condition::Z;
+
+        let state = step(state);
+
+        // incremented pc + 1 (ingores the pc_offset)
+        assert_eq!(state.pc, 0x3001);
+    }
+
+    #[test]
+    fn process_br_any() {
+        let mut state = new_state();
+
+        state.memory.write(0x3000, 0b0000_0_0_0_000000101);
+        //                           ^          `pc_offset (5)
+        //                           `BR
+
+        state.condition = Condition::Z;
+
+        let state = step(state);
+
+        // incremented pc + 1 (ingores the pc_offset)
+        assert_eq!(state.pc, 0x3001);
+    }
+
+    #[test]
     fn process_ld() {
         let mut state = new_state();
 
