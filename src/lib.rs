@@ -1,7 +1,6 @@
 mod config;
 mod debugger;
 mod file_loader;
-mod opcode;
 mod sign_extend;
 mod state;
 mod trap_vector;

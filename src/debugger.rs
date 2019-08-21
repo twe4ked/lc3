@@ -1,4 +1,4 @@
-use crate::{opcode::Opcode, state::State};
+use crate::state::{instructions::Opcode, State};
 use lazy_static::lazy_static;
 use regex::Regex;
 use resp;

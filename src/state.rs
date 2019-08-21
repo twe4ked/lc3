@@ -1,4 +1,4 @@
-mod instructions;
+pub mod instructions;
 
 use instructions::process as process_instruction;
 use libc;
