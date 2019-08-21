@@ -1,4 +1,5 @@
 mod config;
+mod cpu;
 mod debugger;
 mod file_loader;
 mod sign_extend;

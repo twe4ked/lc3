@@ -1,7 +1,8 @@
 pub mod instructions;
 pub mod memory;
 
-use instructions::{execute, Instruction, Register};
+use crate::cpu::execute;
+use instructions::{Instruction, Register};
 use memory::Memory;
 
 pub struct State {
