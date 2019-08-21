@@ -420,7 +420,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         }
 
         Instruction::UNUSED => {
-            unimplemented!();
+            panic!("unused");
         }
 
         // NOT - Bit-Wise Complement
@@ -539,7 +539,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         }
 
         Instruction::RESERVED => {
-            unimplemented!();
+            panic!("reserved");
         }
 
         // LEA - Load Effective Address
