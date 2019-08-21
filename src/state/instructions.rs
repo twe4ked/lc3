@@ -8,21 +8,49 @@ use std::io::{self, Read, Write};
 #[derive(Debug)]
 pub enum Instruction {
     BR(bool, bool, bool, u16),
-    ADD(u16, u16, u16, bool, u16),
-    LD(u16, u16),
-    ST(u16, u16),
-    JSR(bool, u16, u16),
-    AND(bool, u16, u16, u16, u16),
-    LDR(u16, u16, u16),
-    STR(u16, u16, u16),
+    ADD(Register, Register, Register, bool, u16),
+    LD(Register, u16),
+    ST(Register, u16),
+    JSR(bool, u16, Register),
+    AND(bool, u16, Register, Register, Register),
+    LDR(Register, Register, u16),
+    STR(Register, Register, u16),
     UNUSED,
-    NOT(u16, u16),
-    LDI(u16, u16),
-    STI(u16, u16),
-    JMP(u16),
+    NOT(Register, Register),
+    LDI(Register, u16),
+    STI(Register, u16),
+    JMP(Register),
     RESERVED,
-    LEA(u16, u16),
+    LEA(Register, u16),
     TRAP(TrapVector),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Register {
+    R0 = 0,
+    R1 = 1,
+    R2 = 2,
+    R3 = 3,
+    R4 = 4,
+    R5 = 5,
+    R6 = 6,
+    R7 = 7,
+}
+
+impl Register {
+    fn from(n: u16) -> Register {
+        match n {
+            0 => Register::R0,
+            1 => Register::R1,
+            2 => Register::R2,
+            3 => Register::R3,
+            4 => Register::R4,
+            5 => Register::R5,
+            6 => Register::R6,
+            7 => Register::R7,
+            _ => panic!("bad register"),
+        }
+    }
 }
 
 impl Instruction {
@@ -40,9 +68,9 @@ impl Instruction {
             }
 
             0x01 => {
-                let r0 = (instruction >> 9) & 0x7;
-                let r1 = (instruction >> 6) & 0x7;
-                let r2 = instruction & 0x7;
+                let r0 = Register::from((instruction >> 9) & 0x7);
+                let r1 = Register::from((instruction >> 6) & 0x7);
+                let r2 = Register::from(instruction & 0x7);
                 let immediate_flag = ((instruction >> 5) & 0x1) == 0x1;
                 let immediate_value = (instruction & 0x1f).sign_extend(5);
 
@@ -50,14 +78,14 @@ impl Instruction {
             }
 
             0x02 => {
-                let r0 = (instruction >> 9) & 0x7;
+                let r0 = Register::from((instruction >> 9) & 0x7);
                 let pc_offset = instruction & 0x1ff;
 
                 Instruction::LD(r0, pc_offset)
             }
 
             0x03 => {
-                let r0 = (instruction >> 9) & 0x7;
+                let r0 = Register::from((instruction >> 9) & 0x7);
                 let pc_offset = instruction & 0x1ff;
 
                 Instruction::ST(r0, pc_offset)
@@ -65,7 +93,7 @@ impl Instruction {
 
             0x04 => {
                 let use_pc_offset = ((instruction >> 11) & 1) == 1;
-                let r0 = (instruction >> 6) & 7;
+                let r0 = Register::from((instruction >> 6) & 7);
                 let pc_offset = instruction & 0x7ff;
 
                 Instruction::JSR(use_pc_offset, pc_offset, r0)
@@ -75,24 +103,24 @@ impl Instruction {
                 let immediate_flag = ((instruction >> 5) & 1) == 1;
                 let immediate_value = (instruction & 0x1f).sign_extend(5);
 
-                let r0 = (instruction >> 9) & 0x7;
-                let r1 = (instruction >> 6) & 0x7;
-                let r2 = (instruction) & 0x7;
+                let r0 = Register::from((instruction >> 9) & 0x7);
+                let r1 = Register::from((instruction >> 6) & 0x7);
+                let r2 = Register::from((instruction) & 0x7);
 
                 Instruction::AND(immediate_flag, immediate_value, r0, r1, r2)
             }
 
             0x06 => {
-                let r0 = (instruction >> 9) & 0x7;
-                let r1 = (instruction >> 6) & 0x7;
+                let r0 = Register::from((instruction >> 9) & 0x7);
+                let r1 = Register::from((instruction >> 6) & 0x7);
                 let offset = (instruction) & 0x3f;
 
                 Instruction::LDR(r0, r1, offset)
             }
 
             0x07 => {
-                let sr = (instruction >> 9) & 0x7;
-                let base_r = (instruction >> 6) & 0x7;
+                let sr = Register::from((instruction >> 9) & 0x7);
+                let base_r = Register::from((instruction >> 6) & 0x7);
                 let offset = instruction & 0x3f;
 
                 Instruction::STR(sr, base_r, offset)
@@ -101,28 +129,28 @@ impl Instruction {
             0x08 => Instruction::UNUSED,
 
             0x09 => {
-                let r0 = (instruction >> 9) & 0x7;
-                let r1 = (instruction >> 6) & 0x7;
+                let r0 = Register::from((instruction >> 9) & 0x7);
+                let r1 = Register::from((instruction >> 6) & 0x7);
 
                 Instruction::NOT(r0, r1)
             }
 
             0x0a => {
-                let dr = (instruction >> 9) & 0x7;
+                let dr = Register::from((instruction >> 9) & 0x7);
                 let pc_offset = (instruction & 0x1ff).sign_extend(9);
 
                 Instruction::LDI(dr, pc_offset)
             }
 
             0x0b => {
-                let r0 = (instruction >> 9) & 0x7;
+                let r0 = Register::from((instruction >> 9) & 0x7);
                 let pc_offset = instruction & 0x1ff;
 
                 Instruction::STI(r0, pc_offset)
             }
 
             0x0c => {
-                let r0 = (instruction >> 6) & 0x7;
+                let r0 = Register::from((instruction >> 6) & 0x7);
 
                 Instruction::JMP(r0)
             }
@@ -130,7 +158,7 @@ impl Instruction {
             0x0d => Instruction::RESERVED,
 
             0x0e => {
-                let r0 = (instruction >> 9) & 0x7;
+                let r0 = Register::from((instruction >> 9) & 0x7);
                 let pc_offset = instruction & 0x1ff;
 
                 Instruction::LEA(r0, pc_offset)
@@ -218,12 +246,15 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //      ADD R2, R3, R4 ; R2 <- R3 + R4
         //      ADD R2, R3, #7 ; R2 <- R3 + 7
         Instruction::ADD(r0, r1, r2, immediate_flag, immediate_value) => {
-            state.registers[r0 as usize] = if immediate_flag {
-                state.registers[r1 as usize].wrapping_add(immediate_value)
+            let value = if immediate_flag {
+                state.read_register(r1).wrapping_add(immediate_value)
             } else {
-                state.registers[r1 as usize].wrapping_add(state.registers[r2 as usize])
+                state
+                    .read_register(r1)
+                    .wrapping_add(state.read_register(r2))
             };
 
+            state.write_register(r0, value);
             state.update_flags(r0);
         }
 
@@ -250,8 +281,9 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //      LD R4, VALUE ; R4 <- mem[VALUE]
         Instruction::LD(r0, pc_offset) => {
             let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
+            let value = state.memory.read(address);
 
-            state.registers[r0 as usize] = state.memory.read(address);
+            state.write_register(r0, value);
             state.update_flags(r0);
         }
 
@@ -278,7 +310,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         Instruction::ST(r0, pc_offset) => {
             let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
 
-            state.memory.write(address, state.registers[r0 as usize]);
+            state.memory.write(address, state.read_register(r0));
         }
 
         // JSR - Jump to Subroutine
@@ -320,7 +352,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
             if use_pc_offset {
                 state.pc = state.pc.wrapping_add(pc_offset.sign_extend(11));
             } else {
-                state.pc = state.registers[r0 as usize];
+                state.pc = state.read_register(r0);
             }
 
             state.registers[7] = temp;
@@ -356,12 +388,13 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //      AND R2, R3, R4 ;R2 <- R3 AND R4
         //      AND R2, R3, #7 ;R2 <- R3 AND 7
         Instruction::AND(immediate_flag, immediate_value, r0, r1, r2) => {
-            if immediate_flag {
-                state.registers[r0 as usize] = state.registers[r1 as usize] & immediate_value;
+            let value = if immediate_flag {
+                state.read_register(r1) & immediate_value
             } else {
-                state.registers[r0 as usize] =
-                    state.registers[r1 as usize] & state.registers[r2 as usize];
-            }
+                state.read_register(r1) & state.read_register(r2)
+            };
+
+            state.write_register(r0, value);
         }
 
         // LDR - Load Base+offset
@@ -386,9 +419,10 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         // LDR R4, R2, #−5 ; R4 <- mem[R2 − 5]
         Instruction::LDR(r0, r1, offset) => {
-            let address = state.registers[r1 as usize].wrapping_add(offset.sign_extend(6));
+            let address = state.read_register(r1).wrapping_add(offset.sign_extend(6));
+            let value = state.memory.read(address);
 
-            state.registers[r0 as usize] = state.memory.read(address);
+            state.write_register(r0, value);
             state.update_flags(r0);
         }
 
@@ -413,8 +447,10 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         // STR R4, R2, #5 ; mem[R2 + 5] <- R4
         Instruction::STR(sr, base_r, offset) => {
-            let address = state.registers[base_r as usize].wrapping_add(offset.sign_extend(6));
-            let value = state.registers[sr as usize];
+            let address = state
+                .read_register(base_r)
+                .wrapping_add(offset.sign_extend(6));
+            let value = state.read_register(sr);
 
             state.memory.write(address, value);
         }
@@ -444,7 +480,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         // NOT R4, R2 ; R4 <- NOT(R2)
         Instruction::NOT(r0, r1) => {
-            state.registers[r0 as usize] = !state.registers[r1 as usize];
+            state.write_register(r0, !state.read_register(r1));
             state.update_flags(r0);
         }
 
@@ -471,8 +507,9 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //      LDI R4, ONEMORE ; R4 <- mem[mem[ONEMORE]]
         Instruction::LDI(dr, pc_offset) => {
             let address = state.memory.read(state.pc.wrapping_add(pc_offset));
+            let value = state.memory.read(address);
 
-            state.registers[dr as usize] = state.memory.read(address);
+            state.write_register(dr, value);
             state.update_flags(dr);
         }
 
@@ -501,7 +538,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
             let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
             let address = state.memory.read(address);
 
-            state.memory.write(address, state.registers[r0 as usize]);
+            state.memory.write(address, state.read_register(r0));
         }
 
         // JMP - Jump
@@ -536,7 +573,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         // contents of R7, which contains the linkage back to the instruction following the
         // subroutine call instruction.
         Instruction::JMP(r0) => {
-            state.pc = state.registers[r0 as usize];
+            state.pc = state.read_register(r0);
         }
 
         Instruction::RESERVED => {
@@ -567,7 +604,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         // LEA R4, TARGET ; R4 <- address of TARGET.
         Instruction::LEA(r0, pc_offset) => {
-            state.registers[r0 as usize] = state.pc.wrapping_add(pc_offset.sign_extend(9));
+            state.write_register(r0, state.pc.wrapping_add(pc_offset.sign_extend(9)));
         }
 
         // TRAP - System Call

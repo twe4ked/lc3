@@ -1,7 +1,7 @@
 pub mod instructions;
 pub mod memory;
 
-use instructions::{execute, Instruction};
+use instructions::{execute, Instruction, Register};
 use memory::Memory;
 
 pub struct State {
@@ -27,10 +27,10 @@ impl State {
         }
     }
 
-    pub fn update_flags(&mut self, r: u16) -> &Self {
-        if self.registers[r as usize] == 0 {
+    pub fn update_flags(&mut self, r: Register) -> &Self {
+        if self.read_register(r) == 0 {
             self.condition = Condition::Z;
-        } else if (self.registers[r as usize] >> 15) == 1 {
+        } else if (self.read_register(r) >> 15) == 1 {
             // NOTE: A 1 in the left-most bit indicates negative
             self.condition = Condition::N;
         } else {
@@ -38,6 +38,14 @@ impl State {
         }
 
         self
+    }
+
+    pub fn read_register(&self, register: Register) -> u16 {
+        self.registers[register as usize]
+    }
+
+    pub fn write_register(&mut self, register: Register, value: u16) {
+        self.registers[register as usize] = value
     }
 
     pub fn step(mut self) -> Self {
