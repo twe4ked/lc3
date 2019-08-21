@@ -9,7 +9,7 @@ pub enum TrapVector {
 }
 
 impl TrapVector {
-    pub fn from_instruction(instruction: u16) -> TrapVector {
+    pub fn decode(instruction: u16) -> TrapVector {
         let value = instruction & 0xFF;
 
         match value {

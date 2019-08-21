@@ -26,7 +26,7 @@ pub enum Instruction {
 }
 
 impl Instruction {
-    pub fn from_instruction(instruction: u16) -> Instruction {
+    pub fn decode(instruction: u16) -> Instruction {
         let value = instruction >> 12;
 
         match value {
@@ -137,7 +137,7 @@ impl Instruction {
             }
 
             0x0f => {
-                let trap_vector = TrapVector::from_instruction(instruction);
+                let trap_vector = TrapVector::decode(instruction);
 
                 Instruction::TRAP(trap_vector)
             }
@@ -152,7 +152,7 @@ pub fn process(mut state: State) -> State {
 
     state.pc = state.pc.wrapping_add(1);
 
-    match Instruction::from_instruction(instruction) {
+    match Instruction::decode(instruction) {
         // BR - Conditional Branch
         //
         // Assembler Formats

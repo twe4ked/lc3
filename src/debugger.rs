@@ -82,7 +82,7 @@ pub fn run(mut state: State) {
 
                                             string_to_send = format!(
                                                 "{:?}, {:08b}_{:08b}",
-                                                Instruction::from_instruction(instruction),
+                                                Instruction::decode(instruction),
                                                 (instruction >> 8) & 0xff,
                                                 instruction & 0xff
                                             )
