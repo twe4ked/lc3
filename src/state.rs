@@ -8,7 +8,7 @@ use nix::sys::{
 };
 use std::io::{self, Read};
 
-pub type Memory = [u16; std::u16::MAX as usize];
+pub type Memory = [u16; u16::max_value() as usize];
 
 enum MemoryMappedRegister {
     KBSR = 0xfe00, // keyboard status register
@@ -28,7 +28,7 @@ pub struct State {
 impl State {
     pub fn new() -> State {
         State {
-            memory: [0; std::u16::MAX as usize],
+            memory: [0; u16::max_value() as usize],
             registers: [0; 8],
             pc: 0x3000,
             condition: Condition::P,
@@ -48,7 +48,7 @@ impl State {
             }
         }
 
-        if address < std::u16::MAX {
+        if address < u16::max_value() {
             self.memory[address as usize]
         } else {
             0
