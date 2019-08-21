@@ -41,14 +41,10 @@ pub fn process(mut state: State) -> State {
         //
         // [1]: The assembly language opcode BR is interpreted the same as BRnzp; that is, always
         // branch to the target address.
-        Opcode::BR => {
-            let n = (instruction >> 11) & 0x1;
-            let z = (instruction >> 10) & 0x1;
-            let p = (instruction >> 9) & 0x1;
-
-            if (n == 1 && state.condition == Condition::N)
-                || (z == 1 && state.condition == Condition::Z)
-                || (p == 1 && state.condition == Condition::P)
+        Opcode::BR(n, z, p) => {
+            if (n && state.condition == Condition::N)
+                || (z && state.condition == Condition::Z)
+                || (p && state.condition == Condition::P)
             {
                 let pc_offset = instruction & 0x1ff;
 
@@ -85,11 +81,7 @@ pub fn process(mut state: State) -> State {
         //
         //      ADD R2, R3, R4 ; R2 <- R3 + R4
         //      ADD R2, R3, #7 ; R2 <- R3 + 7
-        Opcode::ADD => {
-            let r0 = (instruction >> 9) & 0x7;
-            let r1 = (instruction >> 6) & 0x7;
-            let immediate_flag = ((instruction >> 5) & 0x1) == 0x1;
-
+        Opcode::ADD(r0, r1, immediate_flag) => {
             if immediate_flag {
                 let immediate_value = (instruction & 0x1f).sign_extend(5);
 
@@ -126,9 +118,7 @@ pub fn process(mut state: State) -> State {
         // Example
         //
         //      LD R4, VALUE ; R4 <- mem[VALUE]
-        Opcode::LD => {
-            let r0 = (instruction >> 9) & 0x7;
-            let pc_offset = instruction & 0x1ff;
+        Opcode::LD(r0, pc_offset) => {
             let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
 
             state.registers[r0 as usize] = state.memory[address as usize];
@@ -155,9 +145,7 @@ pub fn process(mut state: State) -> State {
         // Example
         //
         //      ST R4, HERE ; mem[HERE] <- R4
-        Opcode::ST => {
-            let r0 = (instruction >> 9) & 0x7;
-            let pc_offset = instruction & 0x1ff;
+        Opcode::ST(r0, pc_offset) => {
             let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
 
             state.memory[address as usize] = state.registers[r0 as usize];
@@ -196,13 +184,10 @@ pub fn process(mut state: State) -> State {
         //                   ; Jump to QUEUE.
         //      JSRR R3      ; Put the address following JSRR into R7; Jump to the
         //                   ; address contained in R3.
-        Opcode::JSR => {
+        Opcode::JSR(use_pc_offset, pc_offset, r0) => {
             let temp = state.pc;
-            let use_pc_offset = (instruction >> 11) & 1;
-            let pc_offset = instruction & 0x7ff;
-            let r0 = (instruction >> 6) & 7;
 
-            if use_pc_offset == 1 {
+            if use_pc_offset {
                 state.pc = state.pc.wrapping_add(pc_offset.sign_extend(11));
             } else {
                 state.pc = state.registers[r0 as usize];
@@ -240,14 +225,7 @@ pub fn process(mut state: State) -> State {
         //
         //      AND R2, R3, R4 ;R2 <- R3 AND R4
         //      AND R2, R3, #7 ;R2 <- R3 AND 7
-        Opcode::AND => {
-            let immediate_flag = ((instruction >> 5) & 1) == 1;
-            let immediate_value = (instruction & 0x1f).sign_extend(5);
-
-            let r0 = (instruction >> 9) & 0x7;
-            let r1 = (instruction >> 6) & 0x7;
-            let r2 = (instruction) & 0x7;
-
+        Opcode::AND(immediate_flag, immediate_value, r0, r1, r2) => {
             if immediate_flag {
                 state.registers[r0 as usize] = state.registers[r1 as usize] & immediate_value;
             } else {
@@ -277,11 +255,7 @@ pub fn process(mut state: State) -> State {
         // Example
         //
         // LDR R4, R2, #−5 ; R4 <- mem[R2 − 5]
-        Opcode::LDR => {
-            let r0 = (instruction >> 9) & 0x7;
-            let r1 = (instruction >> 6) & 0x7;
-            let offset = (instruction) & 0x3f;
-
+        Opcode::LDR(r0, r1, offset) => {
             let address = state.registers[r1 as usize].wrapping_add(offset.sign_extend(6));
 
             state.registers[r0 as usize] = state.read_memory(address);
@@ -308,11 +282,7 @@ pub fn process(mut state: State) -> State {
         // Example
         //
         // STR R4, R2, #5 ; mem[R2 + 5] <- R4
-        Opcode::STR => {
-            let sr = (instruction >> 9) & 0x7;
-            let base_r = (instruction >> 6) & 0x7;
-            let offset = instruction & 0x3f;
-
+        Opcode::STR(sr, base_r, offset) => {
             let address = state.registers[base_r as usize].wrapping_add(offset.sign_extend(6));
             let value = state.registers[sr as usize];
 
@@ -343,10 +313,7 @@ pub fn process(mut state: State) -> State {
         // Example
         //
         // NOT R4, R2 ; R4 <- NOT(R2)
-        Opcode::NOT => {
-            let r0 = (instruction >> 9) & 0x7;
-            let r1 = (instruction >> 6) & 0x7;
-
+        Opcode::NOT(r0, r1) => {
             state.registers[r0 as usize] = !state.registers[r1 as usize];
             state.update_flags(r0);
         }
@@ -372,9 +339,7 @@ pub fn process(mut state: State) -> State {
         // Example
         //
         //      LDI R4, ONEMORE ; R4 <- mem[mem[ONEMORE]]
-        Opcode::LDI => {
-            let dr = (instruction >> 9) & 0x7;
-            let pc_offset = (instruction & 0x1ff).sign_extend(9);
+        Opcode::LDI(dr, pc_offset) => {
             let address = state.read_memory(state.pc.wrapping_add(pc_offset));
 
             state.registers[dr as usize] = state.read_memory(address);
@@ -402,10 +367,7 @@ pub fn process(mut state: State) -> State {
         // Example
         //
         // STI R4, NOT_HERE ; mem[mem[NOT_HERE]] <- R4
-        Opcode::STI => {
-            let r0 = (instruction >> 9) & 0x7;
-            let pc_offset = instruction & 0x1ff;
-
+        Opcode::STI(r0, pc_offset) => {
             let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
 
             state.memory[state.read_memory(address) as usize] = state.registers[r0 as usize];
@@ -442,9 +404,7 @@ pub fn process(mut state: State) -> State {
         // The RET instruction is a special case of the JMP instruction. The PC is loaded with the
         // contents of R7, which contains the linkage back to the instruction following the
         // subroutine call instruction.
-        Opcode::JMP => {
-            let r0 = (instruction >> 6) & 0x7;
-
+        Opcode::JMP(r0) => {
             state.pc = state.registers[r0 as usize];
         }
 
@@ -475,10 +435,7 @@ pub fn process(mut state: State) -> State {
         // Example
         //
         // LEA R4, TARGET ; R4 <- address of TARGET.
-        Opcode::LEA => {
-            let r0 = (instruction >> 9) & 0x7;
-            let pc_offset = instruction & 0x1ff;
-
+        Opcode::LEA(r0, pc_offset) => {
             state.registers[r0 as usize] = state.pc.wrapping_add(pc_offset.sign_extend(9));
         }
 
@@ -513,8 +470,8 @@ pub fn process(mut state: State) -> State {
         // addresses for system calls specified by their corresponding trap vectors. This region of
         // memory is called the Trap Vector Table. Table A.2 describes the functions performed
         // by the service routines corresponding to trap vectors x20 to x25.
-        Opcode::TRAP => {
-            match TrapVector::from_instruction(instruction) {
+        Opcode::TRAP(trap_vector) => {
+            match trap_vector {
                 // Read a single character from the keyboard. The character is not echoed
                 // onto the console. Its ASCII code is copied into R0. The high eight bits
                 // of R0 are cleared.

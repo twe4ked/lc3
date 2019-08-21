@@ -1,6 +1,4 @@
-mod disassemble;
-
-use crate::{debugger::disassemble::disassemble, opcode::Opcode, state::State};
+use crate::{opcode::Opcode, state::State};
 use lazy_static::lazy_static;
 use regex::Regex;
 use resp;
@@ -84,11 +82,10 @@ pub fn run(mut state: State) {
                                             let opcode = Opcode::from_instruction(instruction);
 
                                             string_to_send = format!(
-                                                "{:?}, {:08b}_{:08b}, {}",
+                                                "{:?}, {:08b}_{:08b}",
                                                 opcode,
                                                 (instruction >> 8) & 0xff,
-                                                instruction & 0xff,
-                                                disassemble(instruction)
+                                                instruction & 0xff
                                             )
                                         }
 
