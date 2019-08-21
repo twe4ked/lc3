@@ -56,6 +56,25 @@ fn get_char() -> u16 {
 }
 
 enum MemoryMappedRegister {
-    KBSR = 0xfe00, // keyboard status register
-    KBDR = 0xfe02, // keyboard data register
+    // Keyboard status register. The ready bit (bit [15]) indicates if the keyboard has received a
+    // new character.
+    KBSR = 0xfe00,
+
+    // Keyboard data register. Bits [7:0] contain the last character typed on the keyboard.
+    KBDR = 0xfe02,
+
+    // Display status register. The ready bit (bit [15]) indicates if the display device is ready
+    // to receive another character to print on the screen.
+    #[allow(unused)]
+    DSR = 0xfe04,
+
+    // Display data register. A character written in the low byte of this register will be
+    // displayed on the screen.
+    #[allow(unused)]
+    DDR = 0xfe06,
+
+    // Machine control register. Bit [15] is the clock enable bit. When cleared, instruction
+    // processing stops.
+    #[allow(unused)]
+    MCR = 0xfffe,
 }
