@@ -74,14 +74,16 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         //      ADD R2, R3, R4 ; R2 <- R3 + R4
         //      ADD R2, R3, #7 ; R2 <- R3 + 7
-        Instruction::ADD(r0, r1, r2, immediate_flag, immediate_value) => {
-            let value = if immediate_flag {
-                state.read_register(r1).wrapping_add(immediate_value)
-            } else {
-                state
-                    .read_register(r1)
-                    .wrapping_add(state.read_register(r2))
-            };
+        Instruction::ADD(r0, r1, r2) => {
+            let value = state
+                .read_register(r1)
+                .wrapping_add(state.read_register(r2));
+
+            state.write_register(r0, value);
+            state.update_flags(r0);
+        }
+        Instruction::ADDIMM(r0, r1, immediate_value) => {
+            let value = state.read_register(r1).wrapping_add(immediate_value);
 
             state.write_register(r0, value);
             state.update_flags(r0);
@@ -175,15 +177,14 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //                   ; Jump to QUEUE.
         //      JSRR R3      ; Put the address following JSRR into R7; Jump to the
         //                   ; address contained in R3.
-        Instruction::JSR(use_pc_offset, pc_offset, r0) => {
+        Instruction::JSR(pc_offset) => {
             let temp = state.pc;
-
-            state.pc = if use_pc_offset {
-                state.pc.wrapping_add(pc_offset.sign_extend(11))
-            } else {
-                state.read_register(r0)
-            };
-
+            state.pc = state.pc.wrapping_add(pc_offset.sign_extend(11));
+            state.registers[7] = temp;
+        }
+        Instruction::JSRR(r0) => {
+            let temp = state.pc;
+            state.pc = state.read_register(r0);
             state.registers[7] = temp;
         }
 
@@ -216,13 +217,12 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         //      AND R2, R3, R4 ;R2 <- R3 AND R4
         //      AND R2, R3, #7 ;R2 <- R3 AND 7
-        Instruction::AND(immediate_flag, immediate_value, r0, r1, r2) => {
-            let value = if immediate_flag {
-                state.read_register(r1) & immediate_value
-            } else {
-                state.read_register(r1) & state.read_register(r2)
-            };
-
+        Instruction::AND(r0, r1, r2) => {
+            let value = state.read_register(r1) & state.read_register(r2);
+            state.write_register(r0, value);
+        }
+        Instruction::ANDIMM(immediate_value, r0, r1) => {
+            let value = state.read_register(r1) & immediate_value;
             state.write_register(r0, value);
         }
 

@@ -1,14 +1,19 @@
 use crate::trap_vector::TrapVector;
 use crate::SignExtend;
 
+/// These instruction types don't map directly to the 4-bit opcodes.
+/// Some have been split into multiple enum variants for better ergonimics.
 #[derive(Debug)]
 pub enum Instruction {
     BR(bool, bool, bool, u16),
-    ADD(Register, Register, Register, bool, u16),
+    ADD(Register, Register, Register),
+    ADDIMM(Register, Register, u16),
     LD(Register, u16),
     ST(Register, u16),
-    JSR(bool, u16, Register),
-    AND(bool, u16, Register, Register, Register),
+    JSR(u16),
+    JSRR(Register),
+    AND(Register, Register, Register),
+    ANDIMM(u16, Register, Register),
     LDR(Register, Register, u16),
     STR(Register, Register, u16),
     UNUSED,
@@ -70,7 +75,11 @@ impl Instruction {
                 let immediate_flag = ((instruction >> 5) & 0x1) == 0x1;
                 let immediate_value = (instruction & 0x1f).sign_extend(5);
 
-                Instruction::ADD(r0, r1, r2, immediate_flag, immediate_value)
+                if immediate_flag {
+                    Instruction::ADDIMM(r0, r1, immediate_value)
+                } else {
+                    Instruction::ADD(r0, r1, r2)
+                }
             }
 
             0x02 => {
@@ -92,7 +101,11 @@ impl Instruction {
                 let r0 = Register::from((instruction >> 6) & 7);
                 let pc_offset = instruction & 0x7ff;
 
-                Instruction::JSR(use_pc_offset, pc_offset, r0)
+                if use_pc_offset {
+                    Instruction::JSR(pc_offset)
+                } else {
+                    Instruction::JSRR(r0)
+                }
             }
 
             0x05 => {
@@ -103,7 +116,11 @@ impl Instruction {
                 let r1 = Register::from((instruction >> 6) & 0x7);
                 let r2 = Register::from((instruction) & 0x7);
 
-                Instruction::AND(immediate_flag, immediate_value, r0, r1, r2)
+                if immediate_flag {
+                    Instruction::ANDIMM(immediate_value, r0, r1)
+                } else {
+                    Instruction::AND(r0, r1, r2)
+                }
             }
 
             0x06 => {
