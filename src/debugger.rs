@@ -1,4 +1,4 @@
-use crate::state::{instructions::Opcode, State};
+use crate::state::{instructions::Instruction, State};
 use lazy_static::lazy_static;
 use regex::Regex;
 use resp;
@@ -79,11 +79,10 @@ pub fn run(mut state: State) {
 
                                         "d" | "disassemble" => {
                                             let instruction: u16 = state.read_memory(state.pc);
-                                            let opcode = Opcode::from_instruction(instruction);
 
                                             string_to_send = format!(
                                                 "{:?}, {:08b}_{:08b}",
-                                                opcode,
+                                                Instruction::from_instruction(instruction),
                                                 (instruction >> 8) & 0xff,
                                                 instruction & 0xff
                                             )
