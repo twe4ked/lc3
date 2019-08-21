@@ -49,7 +49,7 @@ impl State {
 
 #[derive(Debug, PartialEq)]
 pub enum Condition {
-    P = 1,
-    Z = 1 << 1,
-    N = 1 << 2,
+    P,
+    Z,
+    N,
 }
