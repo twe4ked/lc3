@@ -1,5 +1,5 @@
 #[derive(Debug)]
-pub(crate) enum TrapVector {
+pub enum TrapVector {
     GETC,
     OUT,
     PUTS,
@@ -9,7 +9,7 @@ pub(crate) enum TrapVector {
 }
 
 impl TrapVector {
-    pub(crate) fn from_instruction(instruction: u16) -> TrapVector {
+    pub fn from_instruction(instruction: u16) -> TrapVector {
         let value = instruction & 0xFF;
 
         match value {

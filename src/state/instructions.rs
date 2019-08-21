@@ -6,7 +6,7 @@ use crate::{
 };
 use std::io::{self, Read, Write};
 
-pub(crate) fn process(mut state: State) -> State {
+pub fn process(mut state: State) -> State {
     let instruction: u16 = state.read_memory(state.pc);
     let opcode = Opcode::from_instruction(instruction);
 

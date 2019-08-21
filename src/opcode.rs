@@ -1,5 +1,5 @@
 #[derive(Debug)]
-pub(crate) enum Opcode {
+pub enum Opcode {
     BR,
     ADD,
     LD,
@@ -19,7 +19,7 @@ pub(crate) enum Opcode {
 }
 
 impl Opcode {
-    pub(crate) fn from_instruction(instruction: u16) -> Opcode {
+    pub fn from_instruction(instruction: u16) -> Opcode {
         let value = instruction >> 12;
 
         match value {

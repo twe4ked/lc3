@@ -1,7 +1,7 @@
 #[derive(Debug, PartialEq)]
 pub struct Config {
-    pub(crate) filename: String,
-    pub(crate) debug: bool,
+    pub filename: String,
+    pub debug: bool,
 }
 
 impl Config {

@@ -1,6 +1,6 @@
 use crate::{opcode::Opcode, trap_vector::TrapVector, SignExtend};
 
-pub(crate) fn disassemble(instruction: u16) -> String {
+pub fn disassemble(instruction: u16) -> String {
     match Opcode::from_instruction(instruction) {
         Opcode::BR => {
             let n = (instruction >> 11) & 0x1;
