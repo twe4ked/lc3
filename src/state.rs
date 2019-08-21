@@ -26,8 +26,8 @@ pub struct State {
 }
 
 impl State {
-    pub fn new() -> State {
-        State {
+    pub fn new() -> Self {
+        Self {
             memory: [0; u16::max_value() as usize],
             registers: [0; 8],
             pc: 0x3000,
@@ -55,7 +55,7 @@ impl State {
         }
     }
 
-    pub fn update_flags(&mut self, r: u16) -> &State {
+    pub fn update_flags(&mut self, r: u16) -> &Self {
         if self.registers[r as usize] == 0 {
             self.condition = Condition::Z;
         } else if (self.registers[r as usize] >> 15) == 1 {
@@ -68,7 +68,7 @@ impl State {
         self
     }
 
-    pub fn step(mut self) -> State {
+    pub fn step(mut self) -> Self {
         let instruction = self.read_memory(self.pc);
         let instruction = Instruction::decode(instruction);
         execute(self, instruction)

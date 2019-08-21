@@ -5,12 +5,12 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn with(args: &[String]) -> Result<Config, &'static str> {
+    pub fn with(args: &[String]) -> Result<Self, &'static str> {
         if args.len() < 2 {
             return Err("not enough arguments");
         }
 
-        let mut config = Config {
+        let mut config = Self {
             filename: "".to_string(),
             debug: false,
         };

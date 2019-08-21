@@ -26,7 +26,7 @@ pub enum Instruction {
 }
 
 impl Instruction {
-    pub fn decode(instruction: u16) -> Instruction {
+    pub fn decode(instruction: u16) -> Self {
         let value = instruction >> 12;
 
         match value {
