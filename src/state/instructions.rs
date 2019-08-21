@@ -946,13 +946,14 @@ mod tests {
         //                           ^    `r0 `r1
         //                           `NOT
 
-        state.registers[2] = 42;
+        let a = 0b11111111_11010110; // -42
+        state.registers[2] = a;
 
         let state = step(state);
 
-        assert_eq!(state.registers[1], !42);
-        // TODO: Why is this Z?
-        // assert_eq!(state.condition, Condition::P);
+        assert_eq!(state.registers[1], !a);
+        assert_eq!(state.registers[1], 0b00000000_00101001);
+        assert_eq!(state.condition, Condition::P);
     }
 
     #[test]
