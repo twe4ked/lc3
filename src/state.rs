@@ -68,7 +68,7 @@ impl State {
         self
     }
 
-    pub fn process(self) -> State {
+    pub fn step(self) -> State {
         process_instruction(self)
     }
 }

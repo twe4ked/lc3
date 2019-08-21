@@ -155,7 +155,7 @@ pub fn run(mut state: State) {
 
                 state.debug_continue = false;
 
-                state = state.process();
+                state = state.step();
             }
         }
         Err(e) => println!("Couldn't get client: {:?}", e),

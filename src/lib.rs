@@ -17,7 +17,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         run_debugger(state)
     } else {
         while state.running {
-            state = state.process()
+            state = state.step()
         }
     }
 
