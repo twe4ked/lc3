@@ -2,6 +2,7 @@ mod config;
 mod cpu;
 mod debugger;
 mod file_loader;
+mod instruction;
 mod sign_extend;
 mod state;
 mod trap_vector;

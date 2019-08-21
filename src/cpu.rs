@@ -1,4 +1,4 @@
-use crate::state::instructions::Instruction;
+use crate::instruction::Instruction;
 use crate::state::{Condition, State};
 use crate::trap_vector::TrapVector;
 use crate::SignExtend;

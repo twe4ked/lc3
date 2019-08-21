@@ -1,4 +1,5 @@
-use crate::state::{instructions::Instruction, State};
+use crate::instruction::Instruction;
+use crate::state::State;
 use lazy_static::lazy_static;
 use regex::Regex;
 use resp;
