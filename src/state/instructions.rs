@@ -349,11 +349,11 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         Instruction::JSR(use_pc_offset, pc_offset, r0) => {
             let temp = state.pc;
 
-            if use_pc_offset {
-                state.pc = state.pc.wrapping_add(pc_offset.sign_extend(11));
+            state.pc = if use_pc_offset {
+                state.pc.wrapping_add(pc_offset.sign_extend(11))
             } else {
-                state.pc = state.read_register(r0);
-            }
+                state.read_register(r0)
+            };
 
             state.registers[7] = temp;
         }
