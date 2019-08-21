@@ -251,7 +251,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         Instruction::LD(r0, pc_offset) => {
             let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
 
-            state.registers[r0 as usize] = state.memory[address as usize];
+            state.registers[r0 as usize] = state.memory.read(address);
             state.update_flags(r0);
         }
 
@@ -278,7 +278,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         Instruction::ST(r0, pc_offset) => {
             let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
 
-            state.memory[address as usize] = state.registers[r0 as usize];
+            state.memory.write(address, state.registers[r0 as usize]);
         }
 
         // JSR - Jump to Subroutine
@@ -388,7 +388,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         Instruction::LDR(r0, r1, offset) => {
             let address = state.registers[r1 as usize].wrapping_add(offset.sign_extend(6));
 
-            state.registers[r0 as usize] = state.read_memory(address);
+            state.registers[r0 as usize] = state.memory.read(address);
             state.update_flags(r0);
         }
 
@@ -416,7 +416,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
             let address = state.registers[base_r as usize].wrapping_add(offset.sign_extend(6));
             let value = state.registers[sr as usize];
 
-            state.memory[address as usize] = value;
+            state.memory.write(address, value);
         }
 
         Instruction::UNUSED => {
@@ -470,9 +470,9 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         //      LDI R4, ONEMORE ; R4 <- mem[mem[ONEMORE]]
         Instruction::LDI(dr, pc_offset) => {
-            let address = state.read_memory(state.pc.wrapping_add(pc_offset));
+            let address = state.memory.read(state.pc.wrapping_add(pc_offset));
 
-            state.registers[dr as usize] = state.read_memory(address);
+            state.registers[dr as usize] = state.memory.read(address);
             state.update_flags(dr);
         }
 
@@ -499,8 +499,9 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         // STI R4, NOT_HERE ; mem[mem[NOT_HERE]] <- R4
         Instruction::STI(r0, pc_offset) => {
             let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
+            let address = state.memory.read(address);
 
-            state.memory[state.read_memory(address) as usize] = state.registers[r0 as usize];
+            state.memory.write(address, state.registers[r0 as usize]);
         }
 
         // JMP - Jump
@@ -624,8 +625,8 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
                 TrapVector::PUTS => {
                     let mut i: u16 = state.registers[0];
 
-                    while state.read_memory(i) != 0 {
-                        print!("{}", char::from(state.read_memory(i) as u8));
+                    while state.memory.read(i) != 0 {
+                        print!("{}", char::from(state.memory.read(i) as u8));
                         i += 1;
                     }
 
@@ -668,7 +669,7 @@ mod tests {
     use super::*;
 
     fn step(mut state: State) -> State {
-        let instruction = state.read_memory(state.pc);
+        let instruction = state.memory.read(state.pc);
         let instruction = Instruction::decode(instruction);
         execute(state, instruction)
     }
@@ -677,10 +678,10 @@ mod tests {
     fn process_add_immediate() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0001_010_001_1_00001;
-        //                       ^    ^   `r1 ^ ^
-        //                       `add |       | ` literal 1
-        //                            ` r2    `immediate
+        state.memory.write(0x3000, 0b0001_010_001_1_00001);
+        //                           ^    ^   `r1 ^ ^
+        //                           `add |       | ` literal 1
+        //                                ` r2    `immediate
 
         state.registers[1] = 3;
 
@@ -694,11 +695,11 @@ mod tests {
     fn process_add_register() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0001_010_001_0_00_000;
-        //                       ^    ^   `r1 ^ ^  `r0
-        //                       `add |       | ` unused
-        //                            |       `register
-        //                            ` r2 (destination)
+        state.memory.write(0x3000, 0b0001_010_001_0_00_000);
+        //                           ^    ^   `r1 ^ ^  `r0
+        //                           `add |       | ` unused
+        //                                |       `register
+        //                                ` r2 (destination)
 
         state.registers[0] = 2;
         state.registers[1] = 3;
@@ -713,13 +714,13 @@ mod tests {
     fn process_ldi() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b1010_000_000000001;
-        //                       ^    `r0 ^
-        //                       `LDI     `pc_offset
+        state.memory.write(0x3000, 0b1010_000_000000001);
+        //                           ^    `r0 ^
+        //                           `LDI     `pc_offset
 
-        state.memory[0x3001] = 0x3002;
-        state.memory[0x3002] = 0x3003;
-        state.memory[0x3003] = 42;
+        state.memory.write(0x3001, 0x3002);
+        state.memory.write(0x3002, 0x3003);
+        state.memory.write(0x3003, 42);
 
         let state = step(state);
 
@@ -731,9 +732,9 @@ mod tests {
     fn process_jmp() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b1100_000_010_000000;
-        //                       ^        `register
-        //                       `JMP
+        state.memory.write(0x3000, 0b1100_000_010_000000);
+        //                           ^        `register
+        //                           `JMP
 
         state.registers[2] = 5;
 
@@ -746,9 +747,9 @@ mod tests {
     fn process_jmp_ret() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b1100_000_111_000000;
-        //                       ^        `register
-        //                       `JMP
+        state.memory.write(0x3000, 0b1100_000_111_000000);
+        //                           ^        `register
+        //                           `JMP
 
         state.registers[7] = 42;
 
@@ -761,9 +762,9 @@ mod tests {
     fn process_br_n_true() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0000_1_0_0_000000101;
-        //                       ^    `n    `pc_offset (5)
-        //                       `BR
+        state.memory.write(0x3000, 0b0000_1_0_0_000000101);
+        //                           ^    `n    `pc_offset (5)
+        //                           `BR
 
         state.condition = Condition::N;
 
@@ -777,9 +778,9 @@ mod tests {
     fn process_br_n_false() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0000_1_0_0_000000101;
-        //                       ^    `n    `pc_offset (5)
-        //                       `BR
+        state.memory.write(0x3000, 0b0000_1_0_0_000000101);
+        //                           ^    `n    `pc_offset (5)
+        //                           `BR
 
         state.condition = Condition::P;
 
@@ -793,11 +794,11 @@ mod tests {
     fn process_ld() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0010_011_000000101;
-        //                       ^    `r3 ^
-        //                       `LD      `pc_offset (5)
+        state.memory.write(0x3000, 0b0010_011_000000101);
+        //                           ^    `r3 ^
+        //                           `LD      `pc_offset (5)
 
-        state.memory[0x3000 + 1 + 5] = 42;
+        state.memory.write(0x3000 + 1 + 5, 42);
 
         state.condition = Condition::P;
 
@@ -811,26 +812,26 @@ mod tests {
     fn process_st() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0011_011_000000101;
-        //                       ^    `r3 ^
-        //                       `LD      `pc_offset (5)
+        state.memory.write(0x3000, 0b0011_011_000000101);
+        //                           ^    `r3 ^
+        //                           `LD      `pc_offset (5)
 
         state.registers[3] = 42;
         state.condition = Condition::P;
 
-        let state = step(state);
+        let mut state = step(state);
 
-        assert_eq!(state.memory[0x3000 + 1 + 5], 42);
+        assert_eq!(state.memory.read(0x3000 + 1 + 5), 42);
     }
 
     #[test]
     fn process_jsr() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0100_0_00_011_000000;
-        //                       ^    ^ ^  `r3 `unused
-        //                       `JSR | `unused
-        //                            `use pc_offset
+        state.memory.write(0x3000, 0b0100_0_00_011_000000);
+        //                           ^    ^ ^  `r3 `unused
+        //                           `JSR | `unused
+        //                                `use pc_offset
 
         state.registers[3] = 42;
 
@@ -844,10 +845,10 @@ mod tests {
     fn process_jsr_use_pc_offset() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0100_1_10000000011;
-        //                       ^    ^ `pc_offset (1027)
-        //                       `JSR |
-        //                            `use pc_offset
+        state.memory.write(0x3000, 0b0100_1_10000000011);
+        //                           ^    ^ `pc_offset (1027)
+        //                           `JSR |
+        //                                `use pc_offset
 
         let state = step(state);
 
@@ -861,9 +862,9 @@ mod tests {
     fn process_and() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0101_001_010_0_00_011;
-        //                       ^    `r0 `r1 ^    `r2
-        //                       `AND         `immediate_flag
+        state.memory.write(0x3000, 0b0101_001_010_0_00_011);
+        //                           ^    `r0 `r1 ^    `r2
+        //                           `AND         `immediate_flag
 
         state.registers[2] = 3;
         state.registers[3] = 5;
@@ -877,9 +878,9 @@ mod tests {
     fn process_and_immediate() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0101_001_010_1_00101;
-        //                       ^    `r0 `r1 ^ `immediate_value (5)
-        //                       `AND         `immediate_flag
+        state.memory.write(0x3000, 0b0101_001_010_1_00101);
+        //                           ^    `r0 `r1 ^ `immediate_value (5)
+        //                           `AND         `immediate_flag
 
         state.registers[2] = 3;
 
@@ -892,12 +893,12 @@ mod tests {
     fn process_ldr() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0110_001_010_000011;
-        //                       ^    `r0 `r1 `offset (3)
-        //                       `AND
+        state.memory.write(0x3000, 0b0110_001_010_000011);
+        //                           ^    `r0 `r1 `offset (3)
+        //                           `AND
 
         state.registers[2] = 1;
-        state.memory[1 + 3] = 42;
+        state.memory.write(1 + 3, 42);
 
         let state = step(state);
 
@@ -909,9 +910,9 @@ mod tests {
     fn process_ldr_memory_address_too_big() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0110_001_010_000001;
-        //                       ^    `r0 `r1 `offset (1)
-        //                       `AND
+        state.memory.write(0x3000, 0b0110_001_010_000001);
+        //                           ^    `r0 `r1 `offset (1)
+        //                           `AND
 
         state.registers[2] = std::u16::MAX - 1;
 
@@ -925,25 +926,25 @@ mod tests {
     fn process_str() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b0111_001_010_000011;
-        //                       ^    `r0 `r1 `offset (3)
-        //                       `AND
+        state.memory.write(0x3000, 0b0111_001_010_000011);
+        //                           ^    `r0 `r1 `offset (3)
+        //                           `AND
 
         state.registers[1] = 42;
         state.registers[2] = 2;
 
-        let state = step(state);
+        let mut state = step(state);
 
-        assert_eq!(state.memory[2 + 3], 42);
+        assert_eq!(state.memory.read(2 + 3), 42);
     }
 
     #[test]
     fn process_not() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b1001_001_010_1_11111;
-        //                       ^    `r0 `r1
-        //                       `NOT
+        state.memory.write(0x3000, 0b1001_001_010_1_11111);
+        //                           ^    `r0 `r1
+        //                           `NOT
 
         state.registers[2] = 42;
 
@@ -958,26 +959,26 @@ mod tests {
     fn process_sti() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b1011_001_000000010;
-        //                       ^    `r0 `pc_offset (2)
-        //                       `STI
+        state.memory.write(0x3000, 0b1011_001_000000010);
+        //                           ^    `r0 `pc_offset (2)
+        //                           `STI
 
         let address = 3;
         state.registers[1] = 42;
-        state.memory[(state.pc + 1 + 2) as usize] = address;
+        state.memory.write(state.pc + 1 + 2, address);
 
-        let state = step(state);
+        let mut state = step(state);
 
-        assert_eq!(state.memory[address as usize], 42);
+        assert_eq!(state.memory.read(address), 42);
     }
 
     #[test]
     fn process_lea() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b1110_001_000000010;
-        //                       ^    `r0 `pc_offset (2)
-        //                       `LEA
+        state.memory.write(0x3000, 0b1110_001_000000010);
+        //                           ^    `r0 `pc_offset (2)
+        //                           `LEA
 
         let state = step(state);
 
@@ -988,9 +989,9 @@ mod tests {
     fn process_trap_halt() {
         let mut state = new_state();
 
-        state.memory[0x3000] = 0b1111_0000_00100101;
-        //                       ^         `HALT (0x25)
-        //                       `TRAP
+        state.memory.write(0x3000, 0b1111_0000_00100101);
+        //                           ^         `HALT (0x25)
+        //                           `TRAP
 
         let state = step(state);
 

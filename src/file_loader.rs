@@ -8,8 +8,8 @@ pub fn load_file(filename: String, mut state: State) -> Result<State, std::io::E
 
     loop {
         match reader.read_u16::<BigEndian>() {
-            Ok(instruction) => {
-                state.memory[address] = instruction;
+            Ok(value) => {
+                state.memory.write(address as u16, value);
                 address += 1;
             }
             Err(e) => {

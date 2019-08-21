@@ -78,7 +78,7 @@ pub fn run(mut state: State) {
                                         }
 
                                         "d" | "disassemble" => {
-                                            let instruction: u16 = state.read_memory(state.pc);
+                                            let instruction: u16 = state.memory.read(state.pc);
 
                                             string_to_send = format!(
                                                 "{:?}, {:08b}_{:08b}",
@@ -95,7 +95,7 @@ pub fn run(mut state: State) {
                                                 let address =
                                                     u16::from_str_radix(address.as_str(), 16)
                                                         .unwrap();
-                                                let value = state.read_memory(address);
+                                                let value = state.memory.read(address);
                                                 string_to_send =
                                                     format!("{:#04x}, {:#016b}", value, value);
                                             } else {
