@@ -147,12 +147,10 @@ impl Instruction {
     }
 }
 
-pub fn process(mut state: State) -> State {
-    let instruction: u16 = state.read_memory(state.pc);
-
+pub fn execute(mut state: State, instruction: Instruction) -> State {
     state.pc = state.pc.wrapping_add(1);
 
-    match Instruction::decode(instruction) {
+    match instruction {
         // BR - Conditional Branch
         //
         // Assembler Formats
@@ -669,6 +667,12 @@ pub fn process(mut state: State) -> State {
 mod tests {
     use super::*;
 
+    fn step(mut state: State) -> State {
+        let instruction = state.read_memory(state.pc);
+        let instruction = Instruction::decode(instruction);
+        execute(state, instruction)
+    }
+
     #[test]
     fn process_add_immediate() {
         let mut state = new_state();
@@ -680,7 +684,7 @@ mod tests {
 
         state.registers[1] = 3;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.registers, [0, 3, 4, 0, 0, 0, 0, 0]);
         assert_eq!(state.condition, Condition::P);
@@ -699,7 +703,7 @@ mod tests {
         state.registers[0] = 2;
         state.registers[1] = 3;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.registers, [2, 3, 5, 0, 0, 0, 0, 0]);
         assert_eq!(state.condition, Condition::P);
@@ -717,7 +721,7 @@ mod tests {
         state.memory[0x3002] = 0x3003;
         state.memory[0x3003] = 42;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.registers, [42, 0, 0, 0, 0, 0, 0, 0]);
         assert_eq!(state.condition, Condition::P);
@@ -733,7 +737,7 @@ mod tests {
 
         state.registers[2] = 5;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.pc, 5);
     }
@@ -748,7 +752,7 @@ mod tests {
 
         state.registers[7] = 42;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.pc, 42);
     }
@@ -763,7 +767,7 @@ mod tests {
 
         state.condition = Condition::N;
 
-        let state = process(state);
+        let state = step(state);
 
         // incremented pc + 5
         assert_eq!(state.pc, 0x3006);
@@ -779,7 +783,7 @@ mod tests {
 
         state.condition = Condition::P;
 
-        let state = process(state);
+        let state = step(state);
 
         // incremented pc + 1 (ingores the pc_offset)
         assert_eq!(state.pc, 0x3001);
@@ -797,7 +801,7 @@ mod tests {
 
         state.condition = Condition::P;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.registers[3], 42);
         assert_eq!(state.condition, Condition::P);
@@ -814,7 +818,7 @@ mod tests {
         state.registers[3] = 42;
         state.condition = Condition::P;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.memory[0x3000 + 1 + 5], 42);
     }
@@ -830,7 +834,7 @@ mod tests {
 
         state.registers[3] = 42;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.pc, 42);
         assert_eq!(state.registers[7], 0x3001);
@@ -845,7 +849,7 @@ mod tests {
         //                       `JSR |
         //                            `use pc_offset
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.pc, (0x3001 as u16).wrapping_add(0b11111100_00000011));
         //                      `incremented pc           ^
@@ -864,7 +868,7 @@ mod tests {
         state.registers[2] = 3;
         state.registers[3] = 5;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.registers[1], 3 & 5);
     }
@@ -879,7 +883,7 @@ mod tests {
 
         state.registers[2] = 3;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.registers[1], 3 & 5);
     }
@@ -895,7 +899,7 @@ mod tests {
         state.registers[2] = 1;
         state.memory[1 + 3] = 42;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.registers[1], 42);
         assert_eq!(state.condition, Condition::P);
@@ -911,7 +915,7 @@ mod tests {
 
         state.registers[2] = std::u16::MAX - 1;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.registers[1], 0);
         assert_eq!(state.condition, Condition::Z);
@@ -928,7 +932,7 @@ mod tests {
         state.registers[1] = 42;
         state.registers[2] = 2;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.memory[2 + 3], 42);
     }
@@ -943,7 +947,7 @@ mod tests {
 
         state.registers[2] = 42;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.registers[1], !42);
         // TODO: Why is this Z?
@@ -962,7 +966,7 @@ mod tests {
         state.registers[1] = 42;
         state.memory[(state.pc + 1 + 2) as usize] = address;
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.memory[address as usize], 42);
     }
@@ -975,7 +979,7 @@ mod tests {
         //                       ^    `r0 `pc_offset (2)
         //                       `LEA
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.registers[1], 0x3000 + 1 + 2);
     }
@@ -988,7 +992,7 @@ mod tests {
         //                       ^         `HALT (0x25)
         //                       `TRAP
 
-        let state = process(state);
+        let state = step(state);
 
         assert_eq!(state.running, false);
     }

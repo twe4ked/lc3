@@ -1,6 +1,6 @@
 pub mod instructions;
 
-use instructions::process as process_instruction;
+use instructions::{execute, Instruction};
 use libc;
 use nix::sys::{
     select::{select, FdSet},
@@ -68,8 +68,10 @@ impl State {
         self
     }
 
-    pub fn step(self) -> State {
-        process_instruction(self)
+    pub fn step(mut self) -> State {
+        let instruction = self.read_memory(self.pc);
+        let instruction = Instruction::decode(instruction);
+        execute(self, instruction)
     }
 }
 
