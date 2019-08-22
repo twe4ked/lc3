@@ -1,8 +1,8 @@
 use crate::instruction::{Instruction, TrapVector};
 use crate::state::{Condition, State};
 use crate::SignExtend;
-
 use std::io::{self, Read, Write};
+
 pub fn execute(mut state: State, instruction: Instruction) -> State {
     state.pc = state.pc.wrapping_add(1);
 
