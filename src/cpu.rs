@@ -1,6 +1,5 @@
-use crate::instruction::Instruction;
+use crate::instruction::{Instruction, TrapVector};
 use crate::state::{Condition, State};
-use crate::trap_vector::TrapVector;
 use crate::SignExtend;
 
 use std::io::{self, Read, Write};

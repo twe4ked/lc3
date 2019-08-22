@@ -5,7 +5,6 @@ mod file_loader;
 mod instruction;
 mod sign_extend;
 mod state;
-mod trap_vector;
 
 pub use crate::config::Config;
 use crate::debugger::debug;
