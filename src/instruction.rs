@@ -5,7 +5,7 @@ use crate::SignExtend;
 /// Some have been split into multiple enum variants for better ergonimics.
 #[derive(Debug)]
 pub enum Instruction {
-    BR(bool, bool, bool, u16),
+    BR(Condition, u16),
     ADD(Register, Register, Register),
     ADDIMM(Register, Register, u16),
     LD(Register, u16),
@@ -54,6 +54,13 @@ impl Register {
     }
 }
 
+#[derive(Debug)]
+pub struct Condition {
+    pub p: bool,
+    pub z: bool,
+    pub n: bool,
+}
+
 impl Instruction {
     pub fn decode(instruction: u16) -> Self {
         let value = instruction >> 12;
@@ -65,7 +72,7 @@ impl Instruction {
                 let p = ((instruction >> 9) & 0x1) == 1;
                 let pc_offset = instruction & 0x1ff;
 
-                Instruction::BR(n, z, p, pc_offset)
+                Instruction::BR(Condition { n, z, p }, pc_offset)
             }
 
             0x01 => {

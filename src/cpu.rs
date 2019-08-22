@@ -36,10 +36,10 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         // [1]: The assembly language opcode BR is interpreted the same as BRnzp; that is, always
         // branch to the target address.
-        Instruction::BR(n, z, p, pc_offset) => {
-            if (n && state.condition == Condition::N)
-                || (z && state.condition == Condition::Z)
-                || (p && state.condition == Condition::P)
+        Instruction::BR(condition, pc_offset) => {
+            if (condition.n && state.condition == Condition::N)
+                || (condition.z && state.condition == Condition::Z)
+                || (condition.p && state.condition == Condition::P)
             {
                 state.pc = state.pc.wrapping_add(pc_offset.sign_extend(9));
             }
