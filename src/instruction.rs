@@ -3,7 +3,7 @@ use crate::SignExtend;
 
 /// These instruction types don't map directly to the 4-bit opcodes.
 /// Some have been split into multiple enum variants for better ergonimics.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Instruction {
     BR(Condition, u16),
     ADD(Register, Register, Register),
@@ -26,7 +26,7 @@ pub enum Instruction {
     TRAP(TrapVector),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Register {
     R0 = 0,
     R1 = 1,
@@ -54,7 +54,7 @@ impl Register {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Condition {
     pub p: bool,
     pub z: bool,
@@ -192,5 +192,188 @@ impl Instruction {
 
             _ => unreachable!("bad instruction: {}", value),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Instruction::{self, *};
+    use super::Register::*;
+    use super::{Condition, TrapVector};
+
+    fn assert_decode(instruction: u16, expected: Instruction) {
+        assert_eq!(Instruction::decode(instruction), expected);
+    }
+
+    #[test]
+    fn process_add_immediate() {
+        assert_decode(0b0001_010_001_1_00001, ADDIMM(R2, R1, 1));
+        //              ^    ^   `r1 ^ ^
+        //              `add |       | ` literal 1
+        //                   ` r2    `immediate
+    }
+
+    #[test]
+    fn process_add_register() {
+        assert_decode(0b0001_010_001_0_00_000, ADD(R2, R1, R0));
+        //              ^    ^   `r1 ^ ^  `r0
+        //              `add |       | ` unused
+        //                   |       `register
+        //                   ` r2 (destination)
+    }
+
+    #[test]
+    fn process_ldi() {
+        assert_decode(0b1010_000_000000001, LDI(R0, 1));
+        //              ^    `r0 ^
+        //              `LDI     `pc_offset
+    }
+
+    #[test]
+    fn process_jmp() {
+        assert_decode(0b1100_000_010_000000, JMP(R2));
+        //              ^        `register
+        //              `JMP
+    }
+
+    #[test]
+    fn process_jmp_ret() {
+        assert_decode(0b1100_000_111_000000, JMP(R7));
+        //              ^        `register
+        //              `JMP
+    }
+
+    #[test]
+    fn process_br_n() {
+        let condition = Condition {
+            n: true,
+            z: false,
+            p: false,
+        };
+        assert_decode(0b0000_1_0_0_000000101, BR(condition, 5));
+        //              ^    `n    `pc_offset (5)
+        //              `BR
+    }
+
+    #[test]
+    fn process_br_z() {
+        let condition = Condition {
+            n: false,
+            z: true,
+            p: false,
+        };
+        assert_decode(0b0000_0_1_0_000000101, BR(condition, 5));
+        //              ^      `z  `pc_offset (5)
+        //              `BR
+    }
+
+    #[test]
+    fn process_br_p() {
+        let condition = Condition {
+            n: false,
+            z: false,
+            p: true,
+        };
+        assert_decode(0b0000_0_0_1_000000101, BR(condition, 5));
+        //              ^        ^ `pc_offset (5)
+        //              `BR      `p
+    }
+
+    #[test]
+    fn process_br_nz() {
+        let condition = Condition {
+            n: true,
+            z: true,
+            p: false,
+        };
+        assert_decode(0b0000_1_1_0_000000101, BR(condition, 5));
+        //              ^    ^ `z  `pc_offset (5)
+        //              `BR  `n
+    }
+
+    #[test]
+    fn process_ld() {
+        assert_decode(0b0010_011_000000101, LD(R3, 5));
+        //              ^    `r3 ^
+        //              `LD      `pc_offset (5)
+    }
+
+    #[test]
+    fn process_st() {
+        assert_decode(0b0011_011_000000101, ST(R3, 5));
+        //              ^    `r3 ^
+        //              `LD      `pc_offset (5)
+    }
+
+    #[test]
+    fn process_jsr() {
+        assert_decode(0b0100_0_00_011_000000, JSRR(R3));
+        //              ^    ^ ^  `r3 `unused
+        //              `JSR | `unused
+        //                   `use pc_offset
+    }
+
+    #[test]
+    fn process_jsrr() {
+        assert_decode(0b0100_1_10000000011, JSR(1027));
+        //              ^    ^ `pc_offset (1027)
+        //              `JSR |
+        //                   `use pc_offset
+    }
+
+    #[test]
+    fn process_and() {
+        assert_decode(0b0101_001_010_0_00_011, AND(R1, R2, R3));
+        //              ^    `r0 `r1 ^    `r2
+        //              `AND         `immediate_flag
+    }
+
+    #[test]
+    fn process_andimm() {
+        assert_decode(0b0101_001_010_1_00101, ANDIMM(5, R1, R2));
+        //              ^    `r0 `r1 ^ `immediate_value (5)
+        //              `AND         `immediate_flag
+    }
+
+    #[test]
+    fn process_ldr() {
+        assert_decode(0b0110_001_010_000011, LDR(R1, R2, 3));
+        //              ^    `r0 `r1 `offset (3)
+        //              `AND
+    }
+
+    #[test]
+    fn process_str() {
+        assert_decode(0b0111_001_010_000011, STR(R1, R2, 3));
+        //              ^    `r0 `r1 `offset (3)
+        //              `AND
+    }
+
+    #[test]
+    fn process_not() {
+        assert_decode(0b1001_001_010_1_11111, NOT(R1, R2));
+        //              ^    `r0 `r1
+        //              `NOT
+    }
+
+    #[test]
+    fn process_sti() {
+        assert_decode(0b1011_001_000000010, STI(R1, 2));
+        //              ^    `r0 `pc_offset (2)
+        //              `STI
+    }
+
+    #[test]
+    fn process_lea() {
+        assert_decode(0b1110_001_000000010, LEA(R1, 2));
+        //              ^    `r0 `pc_offset (2)
+        //              `LEA
+    }
+
+    #[test]
+    fn process_trap_halt() {
+        assert_decode(0b1111_0000_00100101, TRAP(TrapVector::HALT));
+        //              ^         `HALT (0x25)
+        //              `TRAP
     }
 }
