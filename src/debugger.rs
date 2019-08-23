@@ -71,7 +71,8 @@ pub fn debug(mut state: State) {
 
                                         "r" | "registers" => {
                                             let mut s = vec![];
-                                            for (i, register) in state.registers.iter().enumerate()
+                                            for (i, register) in
+                                                state.registers().iter().enumerate()
                                             {
                                                 s.push(format!("r{}: {:#04x}", i, register));
                                             }

@@ -6,7 +6,7 @@ use memory::Memory;
 
 pub struct State {
     pub memory: Memory,
-    pub registers: [u16; 8],
+    registers: [u16; 8],
     pub pc: u16,
     pub condition: Condition,
     pub running: bool,
@@ -52,6 +52,10 @@ impl State {
         let instruction = self.memory.read(self.pc);
         let instruction = Instruction::decode(instruction);
         execute(self, instruction)
+    }
+
+    pub fn registers(&self) -> [u16; 8] {
+        self.registers
     }
 }
 
