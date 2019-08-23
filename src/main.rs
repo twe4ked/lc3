@@ -1,17 +1,30 @@
-use lc3::{self, Config};
-use std::{env, process};
+use clap::{App, Arg};
+use lc3;
+use std::process;
 use termios::*;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let config = Config::with(&args).unwrap_or_else(|err| {
-        println!("Problem parsing arguments: {}", err);
-        process::exit(1);
-    });
+    let matches = App::new("LC-3 VM")
+        .arg(
+            Arg::with_name("debug")
+                .short("d")
+                .long("debug")
+                .help("Runs in debug mode"),
+        )
+        .arg(
+            Arg::with_name("PROGRAM")
+                .help("The program to run.")
+                .required(true)
+                .index(1),
+        )
+        .get_matches();
 
     disable_input_buffering();
 
-    if let Err(e) = lc3::run(config) {
+    if let Err(e) = lc3::run(
+        matches.value_of("PROGRAM").unwrap().to_string(),
+        matches.is_present("debug"),
+    ) {
         println!("Application error: {}", e);
         process::exit(1);
     }
