@@ -130,7 +130,7 @@ pub fn debug(mut state: State) {
                                                 "   condition              Print condition.",
                                                 "d, disassemble            Disassemble current instruction.",
                                                 "   read <addr>            Read and display memory address. e.g. read 0x3000",
-                                                "   break-address <addr>   Break at address. e.g. read 0x3000",
+                                                "   break-address <addr>   Break at address. e.g. break-address 0x3000",
                                             ].join("\n")
                                         }
 
