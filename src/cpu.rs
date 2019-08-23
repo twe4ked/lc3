@@ -76,16 +76,17 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //      ADD R2, R3, #7 ; R2 <- R3 + 7
         Instruction::ADD(r0, r1, r2) => {
             let value = state
-                .read_register(r1)
-                .wrapping_add(state.read_register(r2));
+                .registers
+                .read(r1)
+                .wrapping_add(state.registers.read(r2));
 
-            state.write_register(r0, value);
+            state.registers.write(r0, value);
             state.update_flags(r0);
         }
         Instruction::ADDIMM(r0, r1, immediate_value) => {
-            let value = state.read_register(r1).wrapping_add(immediate_value);
+            let value = state.registers.read(r1).wrapping_add(immediate_value);
 
-            state.write_register(r0, value);
+            state.registers.write(r0, value);
             state.update_flags(r0);
         }
 
@@ -114,7 +115,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
             let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
             let value = state.memory.read(address);
 
-            state.write_register(r0, value);
+            state.registers.write(r0, value);
             state.update_flags(r0);
         }
 
@@ -141,7 +142,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         Instruction::ST(r0, pc_offset) => {
             let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
 
-            state.memory.write(address, state.read_register(r0));
+            state.memory.write(address, state.registers.read(r0));
         }
 
         // JSR - Jump to Subroutine
@@ -180,12 +181,12 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         Instruction::JSR(pc_offset) => {
             let temp = state.pc;
             state.pc = state.pc.wrapping_add(pc_offset.sign_extend(11));
-            state.write_register(R7, temp);
+            state.registers.write(R7, temp);
         }
         Instruction::JSRR(r0) => {
             let temp = state.pc;
-            state.pc = state.read_register(r0);
-            state.write_register(R7, temp);
+            state.pc = state.registers.read(r0);
+            state.registers.write(R7, temp);
         }
 
         // AND - Bit-wise Logical AND
@@ -218,12 +219,12 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //      AND R2, R3, R4 ;R2 <- R3 AND R4
         //      AND R2, R3, #7 ;R2 <- R3 AND 7
         Instruction::AND(r0, r1, r2) => {
-            let value = state.read_register(r1) & state.read_register(r2);
-            state.write_register(r0, value);
+            let value = state.registers.read(r1) & state.registers.read(r2);
+            state.registers.write(r0, value);
         }
         Instruction::ANDIMM(immediate_value, r0, r1) => {
-            let value = state.read_register(r1) & immediate_value;
-            state.write_register(r0, value);
+            let value = state.registers.read(r1) & immediate_value;
+            state.registers.write(r0, value);
         }
 
         // LDR - Load Base+offset
@@ -248,10 +249,10 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         // LDR R4, R2, #−5 ; R4 <- mem[R2 − 5]
         Instruction::LDR(r0, r1, offset) => {
-            let address = state.read_register(r1).wrapping_add(offset.sign_extend(6));
+            let address = state.registers.read(r1).wrapping_add(offset.sign_extend(6));
             let value = state.memory.read(address);
 
-            state.write_register(r0, value);
+            state.registers.write(r0, value);
             state.update_flags(r0);
         }
 
@@ -277,9 +278,10 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         // STR R4, R2, #5 ; mem[R2 + 5] <- R4
         Instruction::STR(sr, base_r, offset) => {
             let address = state
-                .read_register(base_r)
+                .registers
+                .read(base_r)
                 .wrapping_add(offset.sign_extend(6));
-            let value = state.read_register(sr);
+            let value = state.registers.read(sr);
 
             state.memory.write(address, value);
         }
@@ -309,7 +311,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         // NOT R4, R2 ; R4 <- NOT(R2)
         Instruction::NOT(r0, r1) => {
-            state.write_register(r0, !state.read_register(r1));
+            state.registers.write(r0, !state.registers.read(r1));
             state.update_flags(r0);
         }
 
@@ -338,7 +340,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
             let address = state.memory.read(state.pc.wrapping_add(pc_offset));
             let value = state.memory.read(address);
 
-            state.write_register(dr, value);
+            state.registers.write(dr, value);
             state.update_flags(dr);
         }
 
@@ -367,7 +369,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
             let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
             let address = state.memory.read(address);
 
-            state.memory.write(address, state.read_register(r0));
+            state.memory.write(address, state.registers.read(r0));
         }
 
         // JMP - Jump
@@ -402,7 +404,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         // contents of R7, which contains the linkage back to the instruction following the
         // subroutine call instruction.
         Instruction::JMP(r0) => {
-            state.pc = state.read_register(r0);
+            state.pc = state.registers.read(r0);
         }
 
         Instruction::RESERVED => {
@@ -433,7 +435,9 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         // LEA R4, TARGET ; R4 <- address of TARGET.
         Instruction::LEA(r0, pc_offset) => {
-            state.write_register(r0, state.pc.wrapping_add(pc_offset.sign_extend(9)));
+            state
+                .registers
+                .write(r0, state.pc.wrapping_add(pc_offset.sign_extend(9)));
         }
 
         // TRAP - System Call
@@ -476,12 +480,12 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
                     let mut buffer = [0; 1];
                     io::stdin().read_exact(&mut buffer).unwrap();
 
-                    state.write_register(R0, u16::from(buffer[0]));
+                    state.registers.write(R0, u16::from(buffer[0]));
                 }
 
                 // Write a character in R0[7:0] to the console display.
                 TrapVector::OUT => {
-                    print!("{}", char::from(state.read_register(R0) as u8));
+                    print!("{}", char::from(state.registers.read(R0) as u8));
                 }
 
                 // Write a string of ASCII characters to the console display. The characters
@@ -489,7 +493,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
                 // location, starting with the address specified in R0. Writing terminates with
                 // the occurrence of x0000 in a memory location.
                 TrapVector::PUTS => {
-                    let mut i: u16 = state.read_register(R0);
+                    let mut i: u16 = state.registers.read(R0);
 
                     while state.memory.read(i) != 0 {
                         print!("{}", char::from(state.memory.read(i) as u8));
@@ -539,23 +543,23 @@ mod tests {
     #[test]
     fn process_addimm() {
         let mut state = new_state();
-        state.write_register(R1, 3);
+        state.registers.write(R1, 3);
 
         state = execute(state, ADDIMM(R2, R1, 1));
 
-        assert_eq!(state.read_register(R2), 4);
+        assert_eq!(state.registers.read(R2), 4);
         assert_eq!(state.condition, Condition::P);
     }
 
     #[test]
     fn process_add() {
         let mut state = new_state();
-        state.write_register(R0, 2);
-        state.write_register(R1, 3);
+        state.registers.write(R0, 2);
+        state.registers.write(R1, 3);
 
         state = execute(state, ADD(R2, R1, R0));
 
-        assert_eq!(state.read_register(R2), 5);
+        assert_eq!(state.registers.read(R2), 5);
         assert_eq!(state.condition, Condition::P);
     }
 
@@ -568,14 +572,14 @@ mod tests {
 
         state = execute(state, LDI(R0, 1));
 
-        assert_eq!(state.read_register(R0), 42);
+        assert_eq!(state.registers.read(R0), 42);
         assert_eq!(state.condition, Condition::P);
     }
 
     #[test]
     fn process_jmp() {
         let mut state = new_state();
-        state.write_register(R2, 5);
+        state.registers.write(R2, 5);
 
         state = execute(state, JMP(R2));
 
@@ -585,7 +589,7 @@ mod tests {
     #[test]
     fn process_jmp_ret() {
         let mut state = new_state();
-        state.write_register(R7, 42);
+        state.registers.write(R7, 42);
 
         state = execute(state, JMP(R7));
 
@@ -648,14 +652,14 @@ mod tests {
 
         state = execute(state, LD(R3, 5));
 
-        assert_eq!(state.read_register(R3), 42);
+        assert_eq!(state.registers.read(R3), 42);
         assert_eq!(state.condition, Condition::P);
     }
 
     #[test]
     fn process_st() {
         let mut state = new_state();
-        state.write_register(R3, 42);
+        state.registers.write(R3, 42);
         state.condition = Condition::P;
 
         state = execute(state, ST(R3, 5));
@@ -666,12 +670,12 @@ mod tests {
     #[test]
     fn process_jsrr() {
         let mut state = new_state();
-        state.write_register(R3, 42);
+        state.registers.write(R3, 42);
 
         state = execute(state, JSRR(R3));
 
         assert_eq!(state.pc, 42);
-        assert_eq!(state.read_register(R7), 0x3001);
+        assert_eq!(state.registers.read(R7), 0x3001);
     }
 
     #[test]
@@ -683,58 +687,58 @@ mod tests {
         assert_eq!(state.pc, (0x3001 as u16).wrapping_add(0b11111100_00000011));
         //                      `incremented pc           ^
         //                                                `sign extended 1027
-        assert_eq!(state.read_register(R7), 0x3001);
+        assert_eq!(state.registers.read(R7), 0x3001);
     }
 
     #[test]
     fn process_and() {
         let mut state = new_state();
-        state.write_register(R2, 3);
-        state.write_register(R3, 5);
+        state.registers.write(R2, 3);
+        state.registers.write(R3, 5);
 
         state = execute(state, AND(R1, R2, R3));
 
-        assert_eq!(state.read_register(R1), 3 & 5);
+        assert_eq!(state.registers.read(R1), 3 & 5);
     }
 
     #[test]
     fn process_andimm() {
         let mut state = new_state();
-        state.write_register(R2, 3);
+        state.registers.write(R2, 3);
 
         state = execute(state, ANDIMM(5, R1, R2));
 
-        assert_eq!(state.read_register(R1), 3 & 5);
+        assert_eq!(state.registers.read(R1), 3 & 5);
     }
 
     #[test]
     fn process_ldr() {
         let mut state = new_state();
-        state.write_register(R2, 1);
+        state.registers.write(R2, 1);
         state.memory.write(1 + 3, 42);
 
         state = execute(state, LDR(R1, R2, 3));
 
-        assert_eq!(state.read_register(R1), 42);
+        assert_eq!(state.registers.read(R1), 42);
         assert_eq!(state.condition, Condition::P);
     }
 
     #[test]
     fn process_ldr_memory_address_too_big() {
         let mut state = new_state();
-        state.write_register(R2, std::u16::MAX - 1);
+        state.registers.write(R2, std::u16::MAX - 1);
 
         state = execute(state, LDR(R1, R2, 1));
 
-        assert_eq!(state.read_register(R1), 0);
+        assert_eq!(state.registers.read(R1), 0);
         assert_eq!(state.condition, Condition::Z);
     }
 
     #[test]
     fn process_str() {
         let mut state = new_state();
-        state.write_register(R1, 42);
-        state.write_register(R2, 2);
+        state.registers.write(R1, 42);
+        state.registers.write(R2, 2);
 
         state = execute(state, STR(R1, R2, 3));
 
@@ -745,12 +749,12 @@ mod tests {
     fn process_not() {
         let mut state = new_state();
         let a = 0b11111111_11010110; // -42
-        state.write_register(R2, a);
+        state.registers.write(R2, a);
 
         state = execute(state, NOT(R1, R2));
 
-        assert_eq!(state.read_register(R1), !a);
-        assert_eq!(state.read_register(R1), 0b00000000_00101001);
+        assert_eq!(state.registers.read(R1), !a);
+        assert_eq!(state.registers.read(R1), 0b00000000_00101001);
         assert_eq!(state.condition, Condition::P);
     }
 
@@ -758,7 +762,7 @@ mod tests {
     fn process_sti() {
         let mut state = new_state();
         let address = 3;
-        state.write_register(R1, 42);
+        state.registers.write(R1, 42);
         state.memory.write(state.pc + 1 + 2, address);
 
         state = execute(state, STI(R1, 2));
@@ -772,7 +776,7 @@ mod tests {
 
         state = execute(state, LEA(R1, 2));
 
-        assert_eq!(state.read_register(R1), 0x3000 + 1 + 2);
+        assert_eq!(state.registers.read(R1), 0x3000 + 1 + 2);
     }
 
     #[test]
