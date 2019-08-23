@@ -38,7 +38,7 @@ pub enum Register {
 }
 
 impl Register {
-    pub fn from(n: u16) -> Register {
+    pub fn from(n: u16) -> Self {
         match n {
             0 => Register::R0,
             1 => Register::R1,
