@@ -1,12 +1,14 @@
 pub mod memory;
+pub mod registers;
 
 use crate::cpu::execute;
 use crate::instruction::{Instruction, Register};
 use memory::Memory;
+use registers::Registers;
 
 pub struct State {
     pub memory: Memory,
-    registers: [u16; 8],
+    pub registers: Registers,
     pub pc: u16,
     pub condition: Condition,
     pub running: bool,
@@ -18,7 +20,7 @@ impl State {
     pub fn new() -> Self {
         Self {
             memory: Memory::new(),
-            registers: [0; 8],
+            registers: Registers::new(),
             pc: 0x3000,
             condition: Condition::P,
             running: true,
@@ -41,11 +43,11 @@ impl State {
     }
 
     pub fn read_register(&self, register: Register) -> u16 {
-        self.registers[register as usize]
+        self.registers.read(register)
     }
 
     pub fn write_register(&mut self, register: Register, value: u16) {
-        self.registers[register as usize] = value
+        self.registers.write(register, value)
     }
 
     pub fn step(mut self) -> Self {
@@ -55,7 +57,7 @@ impl State {
     }
 
     pub fn registers(&self) -> [u16; 8] {
-        self.registers
+        self.registers.registers()
     }
 }
 
