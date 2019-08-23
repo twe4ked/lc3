@@ -44,22 +44,21 @@ pub fn debug(mut state: State) {
                     let string_to_send: String;
 
                     match decoder.decode() {
-                        Ok(value) => {
-                            match value {
-                                resp::Value::Array(array) => {
-                                    let line = array.iter().fold(String::new(), |acc, v| {
-                                        if let resp::Value::Bulk(x) = v {
-                                            if acc == "" {
-                                                x.to_string()
-                                            } else {
-                                                acc + " " + x
-                                            }
+                        Ok(value) => match value {
+                            resp::Value::Array(array) => {
+                                let line = array.iter().fold(String::new(), |acc, v| {
+                                    if let resp::Value::Bulk(x) = v {
+                                        if acc == "" {
+                                            x.to_string()
                                         } else {
-                                            acc
+                                            acc + " " + x
                                         }
-                                    });
+                                    } else {
+                                        acc
+                                    }
+                                });
 
-                                    match line.as_ref() {
+                                match line.as_ref() {
                                         "c" | "continue" => {
                                             string_to_send = format!("PC {:#04x}", state.pc);
                                             state.debug_continue = true;
@@ -123,7 +122,6 @@ pub fn debug(mut state: State) {
                                         }
 
                                         "h" | "help" => {
-                                            // TODO: Help is a builtin command
                                             string_to_send = [
                                                 "c, continue               Continue execution.",
                                                 "r, registers              Print registers.",
@@ -143,10 +141,9 @@ pub fn debug(mut state: State) {
                                             string_to_send = format!("Unknown command {:?}", line);
                                         }
                                     }
-                                }
-                                _ => panic!("Unknown value: {:?}", value),
                             }
-                        }
+                            _ => panic!("Unknown value: {:?}", value),
+                        },
                         Err(e) => panic!("Error parsing response {:?}", e),
                     }
 
