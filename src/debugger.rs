@@ -41,9 +41,7 @@ pub fn debug(mut state: State) {
                     let stream_reader = BufReader::new(&stream);
                     let mut decoder = resp::Decoder::new(stream_reader);
 
-                    let string_to_send: String;
-
-                    match decoder.decode() {
+                    let response = match decoder.decode() {
                         Ok(value) => match value {
                             resp::Value::Array(array) => {
                                 let line = array.iter().fold(String::new(), |acc, v| {
@@ -60,12 +58,12 @@ pub fn debug(mut state: State) {
 
                                 match line.as_ref() {
                                         "c" | "continue" => {
-                                            string_to_send = format!("PC {:#04x}", state.pc);
                                             state.debug_continue = true;
+                                            format!("PC {:#04x}", state.pc)
                                         }
 
                                         "condition" => {
-                                            string_to_send = format!("{:?}", state.condition);
+                                            format!("{:?}", state.condition)
                                         }
 
                                         "r" | "registers" => {
@@ -75,13 +73,13 @@ pub fn debug(mut state: State) {
                                             {
                                                 s.push(format!("r{}: {:#04x}", i, register));
                                             }
-                                            string_to_send = s.join("\n");
+                                             s.join("\n")
                                         }
 
                                         "d" | "disassemble" => {
                                             let instruction: u16 = state.memory.read(state.pc);
 
-                                            string_to_send = format!(
+                                            format!(
                                                 "{:?}, {:08b}_{:08b}",
                                                 Instruction::decode(instruction),
                                                 (instruction >> 8) & 0xff,
@@ -97,10 +95,9 @@ pub fn debug(mut state: State) {
                                                     u16::from_str_radix(address.as_str(), 16)
                                                         .unwrap();
                                                 let value = state.memory.read(address);
-                                                string_to_send =
-                                                    format!("{:#04x}, {:#016b}", value, value);
+                                                    format!("{:#04x}, {:#016b}", value, value)
                                             } else {
-                                                string_to_send = "Error".to_string();
+                                                "Error".to_string()
                                             }
                                         }
 
@@ -112,17 +109,17 @@ pub fn debug(mut state: State) {
                                                     u16::from_str_radix(address.as_str(), 16)
                                                         .unwrap();
                                                 state.break_address = Some(address);
-                                                string_to_send = format!(
+                                                format!(
                                                     "Break address set to {:#04x}",
                                                     address
-                                                );
+                                                )
                                             } else {
-                                                string_to_send = "Error".to_string();
+                                                "Error".to_string()
                                             }
                                         }
 
                                         "h" | "help" => {
-                                            string_to_send = [
+                                             [
                                                 "c, continue               Continue execution.",
                                                 "r, registers              Print registers.",
                                                 "   condition              Print condition.",
@@ -134,21 +131,21 @@ pub fn debug(mut state: State) {
 
                                         "exit" => {
                                             state.running = false;
-                                            string_to_send = "Exiting...".to_string();
+                                            "Exiting...".to_string()
                                         }
 
                                         _ => {
-                                            string_to_send = format!("Unknown command {:?}", line);
+                                            format!("Unknown command {:?}", line)
                                         }
                                     }
                             }
                             _ => panic!("Unknown value: {:?}", value),
                         },
                         Err(e) => panic!("Error parsing response {:?}", e),
-                    }
+                    };
 
                     BufWriter::new(&stream)
-                        .write_all(&resp::Value::String(string_to_send).encode())
+                        .write_all(&resp::Value::String(response).encode())
                         .unwrap();
                 }
 
