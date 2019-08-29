@@ -1,7 +1,7 @@
 use byteorder::{BigEndian, ReadBytesExt};
 use std::{fs, io::BufReader};
 
-pub fn load_file(filename: String) -> Result<Vec<u16>, std::io::Error> {
+pub fn read_rom(filename: String) -> Result<Vec<u16>, std::io::Error> {
     let mut reader = BufReader::new(fs::File::open(filename)?);
     let mut buffer = Vec::new();
 
