@@ -21,7 +21,7 @@ impl State {
         Self {
             memory: Memory::new(),
             registers: Registers::new(),
-            pc: 0x3000,
+            pc: 0x0000,
             condition: Condition::P,
             running: true,
             debug_continue: false,

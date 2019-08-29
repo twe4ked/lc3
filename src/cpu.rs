@@ -789,6 +789,8 @@ mod tests {
     }
 
     fn new_state() -> State {
-        State::new()
+        let mut state = State::new();
+        state.pc = 0x3000;
+        state
     }
 }
