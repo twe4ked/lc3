@@ -2,10 +2,9 @@ mod cpu;
 mod debugger;
 mod file;
 mod instruction;
-mod sign_extend;
 mod state;
 
-use crate::{sign_extend::SignExtend, state::State};
+use crate::state::State;
 use std::error::Error;
 
 pub fn run(filename: String, debug: bool) -> Result<(), Box<dyn Error>> {

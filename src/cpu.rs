@@ -1,7 +1,6 @@
 use crate::instruction::Register::*;
 use crate::instruction::{Instruction, TrapVector};
 use crate::state::{Condition, State};
-use crate::SignExtend;
 use std::io::{self, Read, Write};
 
 pub fn execute(mut state: State, instruction: Instruction) -> State {
@@ -41,7 +40,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
                 || (condition.z && state.condition == Condition::Z)
                 || (condition.p && state.condition == Condition::P)
             {
-                state.pc = state.pc.wrapping_add(pc_offset.sign_extend(9));
+                state.pc = state.pc.wrapping_add(sign_extend(pc_offset, 9));
             }
         }
 
@@ -87,7 +86,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
             let value = state
                 .registers
                 .read(r1)
-                .wrapping_add(immediate_value.sign_extend(5));
+                .wrapping_add(sign_extend(immediate_value, 5));
 
             state.registers.write(r0, value);
             state.update_flags(r0);
@@ -115,7 +114,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         //      LD R4, VALUE ; R4 <- mem[VALUE]
         Instruction::LD(r0, pc_offset) => {
-            let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
+            let address = state.pc.wrapping_add(sign_extend(pc_offset, 9));
             let value = state.memory.read(address);
 
             state.registers.write(r0, value);
@@ -143,7 +142,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         //      ST R4, HERE ; mem[HERE] <- R4
         Instruction::ST(r0, pc_offset) => {
-            let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
+            let address = state.pc.wrapping_add(sign_extend(pc_offset, 9));
 
             state.memory.write(address, state.registers.read(r0));
         }
@@ -183,7 +182,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //                   ; address contained in R3.
         Instruction::JSR(pc_offset) => {
             let temp = state.pc;
-            state.pc = state.pc.wrapping_add(pc_offset.sign_extend(11));
+            state.pc = state.pc.wrapping_add(sign_extend(pc_offset, 11));
             state.registers.write(R7, temp);
         }
         Instruction::JSRR(r0) => {
@@ -226,7 +225,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
             state.registers.write(r0, value);
         }
         Instruction::ANDIMM(immediate_value, r0, r1) => {
-            let value = state.registers.read(r1) & immediate_value.sign_extend(5);
+            let value = state.registers.read(r1) & sign_extend(immediate_value, 5);
             state.registers.write(r0, value);
         }
 
@@ -252,7 +251,10 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         // LDR R4, R2, #−5 ; R4 <- mem[R2 − 5]
         Instruction::LDR(r0, r1, offset) => {
-            let address = state.registers.read(r1).wrapping_add(offset.sign_extend(6));
+            let address = state
+                .registers
+                .read(r1)
+                .wrapping_add(sign_extend(offset, 6));
             let value = state.memory.read(address);
 
             state.registers.write(r0, value);
@@ -283,7 +285,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
             let address = state
                 .registers
                 .read(base_r)
-                .wrapping_add(offset.sign_extend(6));
+                .wrapping_add(sign_extend(offset, 6));
             let value = state.registers.read(sr);
 
             state.memory.write(address, value);
@@ -342,7 +344,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         Instruction::LDI(dr, pc_offset) => {
             let address = state
                 .memory
-                .read(state.pc.wrapping_add(pc_offset.sign_extend(9)));
+                .read(state.pc.wrapping_add(sign_extend(pc_offset, 9)));
             let value = state.memory.read(address);
 
             state.registers.write(dr, value);
@@ -371,7 +373,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         // STI R4, NOT_HERE ; mem[mem[NOT_HERE]] <- R4
         Instruction::STI(r0, pc_offset) => {
-            let address = state.pc.wrapping_add(pc_offset.sign_extend(9));
+            let address = state.pc.wrapping_add(sign_extend(pc_offset, 9));
             let address = state.memory.read(address);
 
             state.memory.write(address, state.registers.read(r0));
@@ -442,7 +444,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         Instruction::LEA(r0, pc_offset) => {
             state
                 .registers
-                .write(r0, state.pc.wrapping_add(pc_offset.sign_extend(9)));
+                .write(r0, state.pc.wrapping_add(sign_extend(pc_offset, 9)));
         }
 
         // TRAP - System Call
@@ -537,6 +539,14 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
     }
 
     state
+}
+
+fn sign_extend(n: u16, bit_count: u8) -> u16 {
+    if ((n >> (bit_count - 1)) & 1) == 1 {
+        n | (0xFFFF << bit_count)
+    } else {
+        n
+    }
 }
 
 #[cfg(test)]
@@ -780,6 +790,16 @@ mod tests {
         state = execute(state, TRAP(TrapVector::HALT));
 
         assert_eq!(state.running, false);
+    }
+
+    #[test]
+    fn sign_extend_positive_number() {
+        assert_eq!(sign_extend(0b01010, 5), 0b0000_0000_0000_1010);
+    }
+
+    #[test]
+    fn sign_extend_negative_number() {
+        assert_eq!(sign_extend(0b10101, 5), 0b1111_1111_1111_0101);
     }
 
     fn new_state() -> State {
