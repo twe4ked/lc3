@@ -1,5 +1,3 @@
-use crate::SignExtend;
-
 /// These instruction types don't map directly to the 4-bit opcodes.
 /// Some have been split into multiple enum variants for better ergonimics.
 #[derive(Debug, PartialEq)]
@@ -105,7 +103,7 @@ impl Instruction {
                 let r1 = Register::from((instruction >> 6) & 0x7);
                 let r2 = Register::from(instruction & 0x7);
                 let immediate_flag = ((instruction >> 5) & 0x1) == 0x1;
-                let immediate_value = (instruction & 0x1f).sign_extend(5);
+                let immediate_value = instruction & 0x1f;
 
                 if immediate_flag {
                     Instruction::ADDIMM(r0, r1, immediate_value)
@@ -142,7 +140,7 @@ impl Instruction {
 
             0x05 => {
                 let immediate_flag = ((instruction >> 5) & 1) == 1;
-                let immediate_value = (instruction & 0x1f).sign_extend(5);
+                let immediate_value = instruction & 0x1f;
 
                 let r0 = Register::from((instruction >> 9) & 0x7);
                 let r1 = Register::from((instruction >> 6) & 0x7);
@@ -182,7 +180,7 @@ impl Instruction {
 
             0x0a => {
                 let dr = Register::from((instruction >> 9) & 0x7);
-                let pc_offset = (instruction & 0x1ff).sign_extend(9);
+                let pc_offset = instruction & 0x1ff;
 
                 Instruction::LDI(dr, pc_offset)
             }

@@ -84,7 +84,10 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
             state.update_flags(r0);
         }
         Instruction::ADDIMM(r0, r1, immediate_value) => {
-            let value = state.registers.read(r1).wrapping_add(immediate_value);
+            let value = state
+                .registers
+                .read(r1)
+                .wrapping_add(immediate_value.sign_extend(5));
 
             state.registers.write(r0, value);
             state.update_flags(r0);
@@ -223,7 +226,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
             state.registers.write(r0, value);
         }
         Instruction::ANDIMM(immediate_value, r0, r1) => {
-            let value = state.registers.read(r1) & immediate_value;
+            let value = state.registers.read(r1) & immediate_value.sign_extend(5);
             state.registers.write(r0, value);
         }
 
@@ -337,7 +340,9 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
         //
         //      LDI R4, ONEMORE ; R4 <- mem[mem[ONEMORE]]
         Instruction::LDI(dr, pc_offset) => {
-            let address = state.memory.read(state.pc.wrapping_add(pc_offset));
+            let address = state
+                .memory
+                .read(state.pc.wrapping_add(pc_offset.sign_extend(9)));
             let value = state.memory.read(address);
 
             state.registers.write(dr, value);
