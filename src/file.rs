@@ -1,23 +1,15 @@
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::{BigEndian, ByteOrder};
 use std::fs::File;
-use std::io::{BufReader, Error};
+use std::io::{Error, Read};
 
 pub fn read_rom(filename: String) -> Result<Vec<u16>, Error> {
-    let mut reader = BufReader::new(File::open(filename)?);
-    let mut buffer = Vec::new();
+    let mut data = Vec::new();
+    File::open(filename)?.read_to_end(&mut data)?;
 
-    loop {
-        match reader.read_u16::<BigEndian>() {
-            Ok(value) => {
-                buffer.push(value);
-            }
-            Err(e) => {
-                return if e.kind() == std::io::ErrorKind::UnexpectedEof {
-                    Ok(buffer)
-                } else {
-                    Err(e)
-                };
-            }
-        }
-    }
+    assert!(data.len() % 2 == 0, "invalid ROM");
+
+    let mut buffer = vec![0; data.len() / 2];
+    BigEndian::read_u16_into(&data, &mut buffer);
+
+    Ok(buffer)
 }
