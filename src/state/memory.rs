@@ -26,11 +26,7 @@ impl Memory {
             }
         }
 
-        if address < u16::max_value() {
-            self.memory[address as usize]
-        } else {
-            0
-        }
+        self.memory[address as usize]
     }
 
     pub fn write(&mut self, address: u16, value: u16) {

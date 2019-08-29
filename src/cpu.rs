@@ -724,17 +724,6 @@ mod tests {
     }
 
     #[test]
-    fn process_ldr_memory_address_too_big() {
-        let mut state = new_state();
-        state.registers.write(R2, std::u16::MAX - 1);
-
-        state = execute(state, LDR(R1, R2, 1));
-
-        assert_eq!(state.registers.read(R1), 0);
-        assert_eq!(state.condition, Condition::Z);
-    }
-
-    #[test]
     fn process_str() {
         let mut state = new_state();
         state.registers.write(R1, 42);
