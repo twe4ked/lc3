@@ -6,6 +6,5 @@ edition = "2018"
 
 [dependencies]
 termios = "0.3"
-libc = "0.2"
 nix = "0.13"
 clap = "2.33.0"

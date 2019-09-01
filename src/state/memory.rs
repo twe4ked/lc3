@@ -1,4 +1,3 @@
-use libc;
 use nix::sys::{
     select::{select, FdSet},
     time::{TimeVal, TimeValLike},
@@ -35,8 +34,10 @@ impl Memory {
 }
 
 fn check_key() -> bool {
+    const STDIN_FILENO: i32 = 0;
+
     let mut readfds = FdSet::new();
-    readfds.insert(libc::STDIN_FILENO);
+    readfds.insert(STDIN_FILENO);
 
     match select(None, &mut readfds, None, None, &mut TimeVal::zero()) {
         Ok(value) => value == 1,

@@ -31,7 +31,9 @@ fn main() {
 }
 
 fn disable_input_buffering() {
-    let mut termios = Termios::from_fd(libc::STDIN_FILENO).unwrap_or_else(|err| {
+    const STDIN_FILENO: i32 = 0;
+
+    let mut termios = Termios::from_fd(STDIN_FILENO).unwrap_or_else(|err| {
         println!("An error occured: {}", err);
         process::exit(1);
     });
