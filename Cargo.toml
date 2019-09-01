@@ -5,7 +5,6 @@ authors = ["Odin Dutton <odindutton@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-byteorder = "1"
 termios = "0.3"
 libc = "0.2"
 nix = "0.13"
