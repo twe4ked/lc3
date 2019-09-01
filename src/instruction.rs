@@ -46,7 +46,7 @@ impl Register {
             5 => Register::R5,
             6 => Register::R6,
             7 => Register::R7,
-            _ => panic!("bad register"),
+            _ => unreachable!("bad register"),
         }
     }
 }
