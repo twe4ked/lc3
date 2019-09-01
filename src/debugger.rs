@@ -15,7 +15,7 @@ enum Command {
     Help,
     Exit,
     Unknown(String),
-    Error,
+    Error(String),
 }
 
 pub fn debug(mut state: State) {
@@ -46,7 +46,7 @@ pub fn debug(mut state: State) {
 
                     let command = match stream_reader.read_line(&mut line) {
                         Ok(_) => parse(line.trim().as_ref()),
-                        Err(_) => Command::Error,
+                        Err(_) => Command::Error("Unable to read line".to_string()),
                     };
 
                     let response = match command {
@@ -110,9 +110,7 @@ pub fn debug(mut state: State) {
                             format!("Unknown command {:?}", line)
                         }
 
-                        Command::Error => {
-                            String::from("Error")
-                        }
+                        Command::Error(message) => message,
                     };
 
                     BufWriter::new(&stream)
