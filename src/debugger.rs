@@ -6,6 +6,7 @@ use std::net::TcpListener;
 pub struct Debugger {
     pub debug_continue: bool,
     pub break_address: Option<u16>,
+    should_break: bool,
 }
 
 #[derive(PartialEq, Debug)]
@@ -27,6 +28,7 @@ impl Debugger {
         Debugger {
             debug_continue: false,
             break_address: None,
+            should_break: true,
         }
     }
 
@@ -39,18 +41,16 @@ impl Debugger {
             Ok((stream, address)) => {
                 println!("Debug client connected: {:?}", address);
                 while state.running {
-                    let mut should_break = true;
-
                     if let Some(break_address) = self.break_address {
                         if break_address == state.pc {
                             self.break_address = None;
-                            should_break = true;
+                            self.should_break = true;
                         } else {
-                            should_break = false;
+                            self.should_break = false;
                         }
                     }
 
-                    while state.running && !self.debug_continue && should_break {
+                    while state.running && !self.debug_continue && self.should_break {
                         self.debug_continue = false;
 
                         let mut stream_reader = BufReader::new(&stream);
