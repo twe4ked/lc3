@@ -53,10 +53,8 @@ impl Debugger {
                     while state.running && !self.debug_continue && self.should_break {
                         self.debug_continue = false;
 
-                        let mut stream_reader = BufReader::new(&stream);
                         let mut line = String::new();
-
-                        let command = match stream_reader.read_line(&mut line) {
+                        let command = match BufReader::new(&stream).read_line(&mut line) {
                             Ok(_) => parse(line.trim().as_ref()),
                             Err(_) => Command::Error("Unable to read line".to_string()),
                         };
