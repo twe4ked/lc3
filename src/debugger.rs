@@ -4,8 +4,8 @@ use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::net::TcpListener;
 
 pub struct Debugger {
-    pub debug_continue: bool,
-    pub break_address: Option<u16>,
+    debug_continue: bool,
+    break_address: Option<u16>,
     should_break: bool,
 }
 
