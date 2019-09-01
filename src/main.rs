@@ -1,7 +1,7 @@
 use clap::{App, Arg};
 use lc3;
+use nix::sys::termios::{tcgetattr, tcsetattr, LocalFlags, SetArg};
 use std::process;
-use termios::*;
 
 fn main() {
     let matches = App::new("LC-3 VM")
@@ -33,13 +33,13 @@ fn main() {
 fn disable_input_buffering() {
     const STDIN_FILENO: i32 = 0;
 
-    let mut termios = Termios::from_fd(STDIN_FILENO).unwrap_or_else(|err| {
+    let mut termios = tcgetattr(STDIN_FILENO).unwrap_or_else(|err| {
         println!("An error occured: {}", err);
         process::exit(1);
     });
-    termios.c_lflag &= !(ICANON | ECHO);
+    termios.local_flags &= !(LocalFlags::ICANON | LocalFlags::ECHO);
 
-    tcsetattr(0, TCSANOW, &termios).unwrap_or_else(|err| {
+    tcsetattr(0, SetArg::TCSANOW, &termios).unwrap_or_else(|err| {
         println!("An error occured: {}", err);
         process::exit(1);
     });
