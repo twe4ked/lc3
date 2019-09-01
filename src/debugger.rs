@@ -1,7 +1,5 @@
 use crate::instruction::Instruction;
 use crate::state::State;
-use lazy_static::lazy_static;
-use regex::Regex;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::net::TcpListener;
 
@@ -129,50 +127,47 @@ pub fn debug(mut state: State) {
 }
 
 fn parse(line: &str) -> Command {
-    lazy_static! {
-        static ref READ_REGEX: Regex = Regex::new(r"^read 0x([a-f0-9]{1,4})$").unwrap();
-        static ref BREAK_ADDRESS_REGEX: Regex =
-            Regex::new(r"^break-address 0x([a-f0-9]{1,4})$").unwrap();
-    }
-
     match line {
         "c" | "continue" => Command::Continue,
         "f" | "flags" => Command::Flags,
         "r" | "registers" => Command::Registers,
         "d" | "disassemble" => Command::Disassemble,
-        line if BREAK_ADDRESS_REGEX.is_match(line) => {
-            if let Some(address) = BREAK_ADDRESS_REGEX.captures(line).unwrap().get(1) {
-                Command::BreakAddress(u16::from_str_radix(address.as_str(), 16).unwrap())
-            } else {
-                // TODO: Error
-                Command::BreakAddress(0)
-            }
-        }
         "h" | "help" => Command::Help,
         "exit" => Command::Exit,
         line => {
-            if line.starts_with("read 0x") {
-                match line.find("read 0x") {
-                    Some(_) => {
-                        let (_, address) = line.split_at(7);
-                        if address.len() > 0
-                            && address.len() <= 4
-                            && address.bytes().all(|b| b.is_ascii_hexdigit())
-                        {
-                            Command::Read(
-                                u16::from_str_radix(address, 16).expect("unable to parse address"),
-                            )
-                        } else {
-                            Command::Unknown(line.trim().to_string())
-                        }
-                    }
-                    None => Command::Unknown(line.trim().to_string()),
-                }
-            } else {
-                Command::Unknown(line.trim().to_string())
+            match parse_hex_after_pattern("read 0x", line) {
+                Some(address) => return Command::Read(address),
+                None => (),
             }
+            match parse_hex_after_pattern("break-address 0x", line) {
+                Some(address) => return Command::BreakAddress(address),
+                None => (),
+            }
+
+            Command::Unknown(line.trim().to_string())
         }
     }
+}
+
+fn parse_hex_after_pattern(pattern: &str, line: &str) -> Option<u16> {
+    if line.starts_with(pattern) {
+        match line.find(pattern) {
+            Some(_) => {
+                let (_, address) = line.split_at(pattern.len());
+                if address.len() > 0
+                    && address.len() <= 4
+                    && address.bytes().all(|b| b.is_ascii_hexdigit())
+                {
+                    return Some(
+                        u16::from_str_radix(address, 16).expect("unable to parse address"),
+                    );
+                }
+            }
+            None => (),
+        }
+    }
+
+    None
 }
 
 #[cfg(test)]
@@ -180,12 +175,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_read() {
-        for command in vec!["read", "read 0x", "read 0x12345", "read 0x1z"] {
-            assert_eq!(parse(command), Command::Unknown(command.to_string()));
+    fn test_parse_hex_after_pattern() {
+        for command in vec!["read", "read 0x", "read 0x12345", "read 0x1z", "a read 0x1"] {
+            assert_eq!(parse_hex_after_pattern("read 0x", command), None);
         }
 
-        assert_eq!(parse("read 0x1"), Command::Read(1));
-        assert_eq!(parse("read 0x1234"), Command::Read(4660));
+        assert_eq!(parse_hex_after_pattern("read 0x", "read 0x1"), Some(1));
+        assert_eq!(
+            parse_hex_after_pattern("read 0x", "read 0x1234"),
+            Some(4660)
+        );
     }
 }
