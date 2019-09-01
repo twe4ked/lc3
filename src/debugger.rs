@@ -5,6 +5,7 @@ use regex::Regex;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::net::TcpListener;
 
+#[derive(PartialEq, Debug)]
 enum Command {
     Continue,
     Registers,
@@ -143,8 +144,7 @@ fn parse(line: &str) -> Command {
             if let Some(address) = READ_REGEX.captures(line).unwrap().get(1) {
                 Command::Read(u16::from_str_radix(address.as_str(), 16).unwrap())
             } else {
-                // TODO: Error, or perhaps default to PC + 1?
-                Command::Read(0)
+                unreachable!();
             }
         }
         line if BREAK_ADDRESS_REGEX.is_match(line) => {
@@ -158,5 +158,20 @@ fn parse(line: &str) -> Command {
         "h" | "help" => Command::Help,
         "exit" => Command::Exit,
         _ => Command::Unknown(line.trim().to_string()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_read() {
+        for command in vec!["read", "read 0x", "read 0x12345"] {
+            assert_eq!(parse(command), Command::Unknown(command.to_string()));
+        }
+
+        assert_eq!(parse("read 0x1"), Command::Read(1));
+        assert_eq!(parse("read 0x1234"), Command::Read(4660));
     }
 }
