@@ -17,14 +17,14 @@ Example applications:
 
 ```
 $ cargo run [path.obj] --debug
-Waiting for redis-cli connection...
+Waiting for connection...
 ```
 
 From a separate shell:
 
 ```
-$ redis-cli
-127.0.0.1:6379> h
+$ nc 127.0.0.1 6379
+h
 c, continue               Continue execution.
 r, registers              Print registers.
    condition              Print condition.
