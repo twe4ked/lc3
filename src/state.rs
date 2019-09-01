@@ -52,9 +52,12 @@ impl State {
         self.registers.registers()
     }
 
-    pub fn load_rom(&mut self, rom: &mut [u16]) {
+    pub fn load_rom(&mut self, rom: &mut [u16]) -> Result<(), &str> {
         let mut rom = rom.iter();
-        let address = rom.next().expect("ROM must be at least 2 bytes.");
+        let address = match rom.next() {
+            Some(a) => a,
+            None => return Err("ROM must be at least 2 bytes."),
+        };
         let mut address = *address;
         self.pc = address;
 
@@ -62,6 +65,8 @@ impl State {
             self.memory.write(address, *value);
             address += 1;
         }
+
+        Ok(())
     }
 }
 

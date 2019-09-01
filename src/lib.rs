@@ -10,7 +10,7 @@ use std::error::Error;
 pub fn run(filename: String, debug: bool) -> Result<(), Box<dyn Error>> {
     let mut rom = file::read_rom(filename)?;
     let mut state = State::new();
-    state.load_rom(&mut rom);
+    state.load_rom(&mut rom)?;
 
     if debug {
         debugger::debug(state)
