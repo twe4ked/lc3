@@ -39,50 +39,13 @@ pub fn debug(mut state: State) {
                 }
 
                 while state.running && !state.debug_continue && should_break {
-                    lazy_static! {
-                        static ref READ_REGEX: Regex =
-                            Regex::new(r"^read 0x([a-f0-9]{1,4})$").unwrap();
-                        static ref BREAK_ADDRESS_REGEX: Regex =
-                            Regex::new(r"^break-address 0x([a-f0-9]{1,4})$").unwrap();
-                    }
-
                     state.debug_continue = false;
 
                     let mut stream_reader = BufReader::new(&stream);
                     let mut line = String::new();
 
                     let command = match stream_reader.read_line(&mut line) {
-                        Ok(_) => match line.trim().as_ref() {
-                            "c" | "continue" => Command::Continue,
-                            "f" | "flags" => Command::Flags,
-                            "r" | "registers" => Command::Registers,
-                            "d" | "disassemble" => Command::Disassemble,
-                            line if READ_REGEX.is_match(line) => {
-                                if let Some(address) = READ_REGEX.captures(line).unwrap().get(1) {
-                                    Command::Read(
-                                        u16::from_str_radix(address.as_str(), 16).unwrap(),
-                                    )
-                                } else {
-                                    // TODO: Error, or perhaps default to PC + 1?
-                                    Command::Read(0)
-                                }
-                            }
-                            line if BREAK_ADDRESS_REGEX.is_match(line) => {
-                                if let Some(address) =
-                                    BREAK_ADDRESS_REGEX.captures(line).unwrap().get(1)
-                                {
-                                    Command::BreakAddress(
-                                        u16::from_str_radix(address.as_str(), 16).unwrap(),
-                                    )
-                                } else {
-                                    // TODO: Error
-                                    Command::BreakAddress(0)
-                                }
-                            }
-                            "h" | "help" => Command::Help,
-                            "exit" => Command::Exit,
-                            _ => Command::Unknown(line.trim().to_string()),
-                        },
+                        Ok(_) => parse(line.trim().as_ref()),
                         Err(_) => Command::Error,
                     };
 
@@ -163,5 +126,39 @@ pub fn debug(mut state: State) {
             }
         }
         Err(e) => println!("Couldn't get client: {:?}", e),
+    }
+}
+
+fn parse(line: &str) -> Command {
+    lazy_static! {
+        static ref READ_REGEX: Regex = Regex::new(r"^read 0x([a-f0-9]{1,4})$").unwrap();
+        static ref BREAK_ADDRESS_REGEX: Regex =
+            Regex::new(r"^break-address 0x([a-f0-9]{1,4})$").unwrap();
+    }
+
+    match line {
+        "c" | "continue" => Command::Continue,
+        "f" | "flags" => Command::Flags,
+        "r" | "registers" => Command::Registers,
+        "d" | "disassemble" => Command::Disassemble,
+        line if READ_REGEX.is_match(line) => {
+            if let Some(address) = READ_REGEX.captures(line).unwrap().get(1) {
+                Command::Read(u16::from_str_radix(address.as_str(), 16).unwrap())
+            } else {
+                // TODO: Error, or perhaps default to PC + 1?
+                Command::Read(0)
+            }
+        }
+        line if BREAK_ADDRESS_REGEX.is_match(line) => {
+            if let Some(address) = BREAK_ADDRESS_REGEX.captures(line).unwrap().get(1) {
+                Command::BreakAddress(u16::from_str_radix(address.as_str(), 16).unwrap())
+            } else {
+                // TODO: Error
+                Command::BreakAddress(0)
+            }
+        }
+        "h" | "help" => Command::Help,
+        "exit" => Command::Exit,
+        _ => Command::Unknown(line.trim().to_string()),
     }
 }
