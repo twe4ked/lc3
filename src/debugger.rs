@@ -18,7 +18,7 @@ enum Command {
 }
 
 pub fn debug(mut state: State) {
-    let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:6379").expect("unable to bind to port 6379");
 
     println!("Waiting for connection...");
 
@@ -114,7 +114,7 @@ pub fn debug(mut state: State) {
 
                     BufWriter::new(&stream)
                         .write_all(format!("{}\n", response).as_bytes())
-                        .unwrap();
+                        .expect("unable to write to socket");
                 }
 
                 state.debug_continue = false;

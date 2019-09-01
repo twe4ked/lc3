@@ -485,7 +485,9 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
                 // of R0 are cleared.
                 TrapVector::GETC => {
                     let mut buffer = [0; 1];
-                    io::stdin().read_exact(&mut buffer).unwrap();
+                    io::stdin()
+                        .read_exact(&mut buffer)
+                        .expect("unable to read from STDIN");
 
                     state.registers.write(R0, u16::from(buffer[0]));
                 }
@@ -507,7 +509,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
                         i += 1;
                     }
 
-                    io::stdout().flush().unwrap();
+                    io::stdout().flush().expect("unable to flush stdin");
                 }
 
                 // Print a prompt on the screen and read a single character from the keyboard.

@@ -46,7 +46,9 @@ fn check_key() -> bool {
 
 fn get_char() -> u16 {
     let mut buffer = [0; 1];
-    io::stdin().read_exact(&mut buffer).unwrap();
+    io::stdin()
+        .read_exact(&mut buffer)
+        .expect("unable to read from STDIN");
 
     u16::from(buffer[0])
 }
