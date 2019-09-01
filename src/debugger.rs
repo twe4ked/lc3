@@ -61,69 +61,7 @@ impl Debugger {
                             Err(_) => Command::Error("Unable to read line".to_string()),
                         };
 
-                        let response = match command {
-                            Command::Continue => {
-                                self.debug_continue = true;
-                                format!("PC {:#04x}", state.pc)
-                            }
-
-                            Command::Flags => {
-                                format!("{:?}", state.condition)
-                            }
-
-                            Command::Registers => {
-                                let mut s = vec![];
-                                for (i, register) in
-                                    state.registers().iter().enumerate()
-                                {
-                                    s.push(format!("r{}: {:#04x}", i, register));
-                                }
-                                 s.join("\n")
-                            }
-
-                            Command::Disassemble => {
-                                let instruction: u16 = state.memory.read(state.pc);
-
-                                format!(
-                                    "{:?}, {:08b}_{:08b}",
-                                    Instruction::decode(instruction),
-                                    (instruction >> 8) & 0xff,
-                                    instruction & 0xff
-                                )
-                            }
-
-                            Command::Read(address) => {
-                                let value = state.memory.read(address);
-                                format!("{:#04x}, {:#016b}", value, value)
-                            }
-
-                            Command::BreakAddress(address) => {
-                                self.break_address = Some(address);
-                                format!("Break address set to {:#04x}", address)
-                            }
-
-                            Command::Help => {
-                                 [
-                                    "c, continue               Continue execution.",
-                                    "r, registers              Print registers.",
-                                    "f, flags                  Print flags.",
-                                    "d, disassemble            Disassemble current instruction.",
-                                    "   read <addr>            Read and display memory address. e.g. read 0x3000",
-                                    "   break-address <addr>   Break at address. e.g. break-address 0x3000",
-                                ].join("\n")
-                            }
-
-                            Command::Exit => {
-                                state.running = false;
-                                "Exiting...".to_string()
-                            }
-
-                            Command::Unknown(line) => {
-                                format!("Unknown command {:?}", line)
-                            }
-
-                            Command::Error(message) => message,
-                        };
+                        let response = self.handle_command(&mut state, command);
 
                         BufWriter::new(&stream)
                             .write_all(format!("{}\n", response).as_bytes())
@@ -136,6 +74,65 @@ impl Debugger {
                 }
             }
             Err(e) => println!("Couldn't get client: {:?}", e),
+        }
+    }
+
+    fn handle_command(&mut self, state: &mut State, command: Command) -> String {
+        match command {
+            Command::Continue => {
+                self.debug_continue = true;
+                format!("PC {:#04x}", state.pc)
+            }
+
+            Command::Flags => format!("{:?}", state.condition),
+
+            Command::Registers => {
+                let mut s = vec![];
+                for (i, register) in state.registers().iter().enumerate() {
+                    s.push(format!("r{}: {:#04x}", i, register));
+                }
+                s.join("\n")
+            }
+
+            Command::Disassemble => {
+                let instruction: u16 = state.memory.read(state.pc);
+
+                format!(
+                    "{:?}, {:08b}_{:08b}",
+                    Instruction::decode(instruction),
+                    (instruction >> 8) & 0xff,
+                    instruction & 0xff
+                )
+            }
+
+            Command::Read(address) => {
+                let value = state.memory.read(address);
+                format!("{:#04x}, {:#016b}", value, value)
+            }
+
+            Command::BreakAddress(address) => {
+                self.break_address = Some(address);
+                format!("Break address set to {:#04x}", address)
+            }
+
+            Command::Help => [
+                "c, continue               Continue execution.",
+                "r, registers              Print registers.",
+                "f, flags                  Print flags.",
+                "d, disassemble            Disassemble current instruction.",
+                "   read <addr>            Read and display memory address. e.g. read 0x3000",
+                "   break-address <addr>   Break at address. e.g. break-address 0x3000",
+            ]
+            .join("\n"),
+
+            Command::Exit => {
+                state.running = false;
+                "Exiting...".to_string()
+            }
+
+            Command::Unknown(line) => format!("Unknown command {:?}", line),
+
+            Command::Error(message) => message,
         }
     }
 }
