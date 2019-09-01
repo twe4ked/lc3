@@ -140,13 +140,6 @@ fn parse(line: &str) -> Command {
         "f" | "flags" => Command::Flags,
         "r" | "registers" => Command::Registers,
         "d" | "disassemble" => Command::Disassemble,
-        line if READ_REGEX.is_match(line) => {
-            if let Some(address) = READ_REGEX.captures(line).unwrap().get(1) {
-                Command::Read(u16::from_str_radix(address.as_str(), 16).unwrap())
-            } else {
-                unreachable!();
-            }
-        }
         line if BREAK_ADDRESS_REGEX.is_match(line) => {
             if let Some(address) = BREAK_ADDRESS_REGEX.captures(line).unwrap().get(1) {
                 Command::BreakAddress(u16::from_str_radix(address.as_str(), 16).unwrap())
@@ -157,7 +150,28 @@ fn parse(line: &str) -> Command {
         }
         "h" | "help" => Command::Help,
         "exit" => Command::Exit,
-        _ => Command::Unknown(line.trim().to_string()),
+        line => {
+            if line.starts_with("read 0x") {
+                match line.find("read 0x") {
+                    Some(_) => {
+                        let (_, address) = line.split_at(7);
+                        if address.len() > 0
+                            && address.len() <= 4
+                            && address.bytes().all(|b| b.is_ascii_hexdigit())
+                        {
+                            Command::Read(
+                                u16::from_str_radix(address, 16).expect("unable to parse address"),
+                            )
+                        } else {
+                            Command::Unknown(line.trim().to_string())
+                        }
+                    }
+                    None => Command::Unknown(line.trim().to_string()),
+                }
+            } else {
+                Command::Unknown(line.trim().to_string())
+            }
+        }
     }
 }
 
@@ -167,7 +181,7 @@ mod tests {
 
     #[test]
     fn test_parse_read() {
-        for command in vec!["read", "read 0x", "read 0x12345"] {
+        for command in vec!["read", "read 0x", "read 0x12345", "read 0x1z"] {
             assert_eq!(parse(command), Command::Unknown(command.to_string()));
         }
 
