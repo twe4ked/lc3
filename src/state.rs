@@ -12,8 +12,6 @@ pub struct State {
     pub pc: u16,
     pub condition: Condition,
     pub running: bool,
-    pub debug_continue: bool,
-    pub break_address: Option<u16>,
 }
 
 impl State {
@@ -24,8 +22,6 @@ impl State {
             pc: 0x0000,
             condition: Condition::P,
             running: true,
-            debug_continue: false,
-            break_address: None,
         }
     }
 

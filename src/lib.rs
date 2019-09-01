@@ -4,6 +4,7 @@ mod file;
 mod instruction;
 mod state;
 
+use crate::debugger::Debugger;
 use crate::state::State;
 use std::error::Error;
 
@@ -13,7 +14,8 @@ pub fn run(filename: String, debug: bool) -> Result<(), Box<dyn Error>> {
     state.load_rom(&mut rom)?;
 
     if debug {
-        debugger::debug(state)
+        let mut debugger = Debugger::new();
+        debugger.step(state)
     } else {
         while state.running {
             state = state.step()
