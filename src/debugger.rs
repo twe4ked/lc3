@@ -97,7 +97,7 @@ impl Debugger {
                 .join("\n"),
 
             Command::Disassemble => {
-                let instruction: u16 = state.memory.read(state.pc);
+                let instruction = state.memory.read(state.pc);
 
                 format!(
                     "{:?}, {:08b}_{:08b}",
