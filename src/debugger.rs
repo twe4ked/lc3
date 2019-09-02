@@ -16,6 +16,7 @@ enum Command {
     Disassemble,
     Read(u16),
     BreakAddress(u16),
+    Info,
     Help,
     Exit,
     Unknown(String),
@@ -120,6 +121,27 @@ impl Debugger {
                 format!("Break address set to {:#04x}", address)
             }
 
+            Command::Info => {
+                let instruction = Instruction::decode(state.memory.read(state.pc));
+                let registers = state
+                    .registers()
+                    .iter()
+                    .enumerate()
+                    .map(|(i, register)| format!("R{}: {:#04x}", i, register))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                let break_address = if let Some(a) = self.break_address {
+                    format!(", break-address {:#04x}", a)
+                } else {
+                    String::new()
+                };
+
+                format!(
+                    "{:#04x}: {:?}, Flags: {:?}, [{}]{}",
+                    state.pc, instruction, state.condition, registers, break_address
+                )
+            }
+
             Command::Help => [
                 "c, continue               Continue execution.",
                 "r, registers              Print registers.",
@@ -148,6 +170,7 @@ fn parse(line: &str) -> Command {
         "f" | "flags" => Command::Flags,
         "r" | "registers" => Command::Registers,
         "d" | "disassemble" => Command::Disassemble,
+        "i" | "info" => Command::Info,
         "h" | "help" => Command::Help,
         "exit" => Command::Exit,
         line => {
