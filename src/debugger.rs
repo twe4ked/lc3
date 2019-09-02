@@ -39,8 +39,9 @@ impl Debugger {
             Ok((stream, address)) => {
                 eprintln!("Debug client connected: {:?}", address);
 
+                let mut should_break = true;
                 while state.running {
-                    while state.running && !self.debug_continue && self.should_break(state.pc) {
+                    while state.running && !self.debug_continue && should_break {
                         self.debug_continue = false;
 
                         let mut line = String::new();
@@ -59,6 +60,8 @@ impl Debugger {
                     self.debug_continue = false;
 
                     state = state.step();
+
+                    should_break = self.should_break(state.pc);
                 }
             }
             Err(e) => eprintln!("Couldn't get client: {:?}", e),
