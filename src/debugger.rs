@@ -33,11 +33,12 @@ impl Debugger {
     pub fn step(&mut self, mut state: State) {
         let listener = TcpListener::bind("127.0.0.1:6379").expect("unable to bind to port 6379");
 
-        println!("Waiting for connection...");
+        eprintln!("Waiting for connection...");
 
         match listener.accept() {
             Ok((stream, address)) => {
-                println!("Debug client connected: {:?}", address);
+                eprintln!("Debug client connected: {:?}", address);
+
                 while state.running {
                     while state.running && !self.debug_continue && self.should_break(state.pc) {
                         self.debug_continue = false;
@@ -60,7 +61,7 @@ impl Debugger {
                     state = state.step();
                 }
             }
-            Err(e) => println!("Couldn't get client: {:?}", e),
+            Err(e) => eprintln!("Couldn't get client: {:?}", e),
         }
     }
 
