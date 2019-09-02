@@ -88,13 +88,13 @@ impl Debugger {
 
             Command::Flags => format!("{:?}", state.condition),
 
-            Command::Registers => {
-                let mut s = vec![];
-                for (i, register) in state.registers().iter().enumerate() {
-                    s.push(format!("r{}: {:#04x}", i, register));
-                }
-                s.join("\n")
-            }
+            Command::Registers => state
+                .registers()
+                .iter()
+                .enumerate()
+                .map(|(i, register)| format!("R{}: {:#04x}", i, register))
+                .collect::<Vec<String>>()
+                .join("\n"),
 
             Command::Disassemble => {
                 let instruction: u16 = state.memory.read(state.pc);
