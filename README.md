@@ -23,7 +23,7 @@ Waiting for connection...
 From a separate shell:
 
 ```
-$ nc 127.0.0.1 6379
+$ ./bin/debug.sh
 h
 c, continue               Continue execution.
 r, registers              Print registers.
