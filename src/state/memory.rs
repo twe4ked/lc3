@@ -1,7 +1,5 @@
-use nix::sys::{
-    select::{select, FdSet},
-    time::{TimeVal, TimeValLike},
-};
+use nix::sys::select::{select, FdSet};
+use nix::sys::time::{TimeVal, TimeValLike};
 use std::io::{self, Read};
 
 pub struct Memory {
