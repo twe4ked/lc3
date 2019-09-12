@@ -49,7 +49,9 @@ impl Memory {
         } else if DSR == address {
             unimplemented!("DSR")
         } else if DDR == address {
-            unimplemented!("DDR")
+            let value = self.memory[DDR as usize];
+            print!("{}", char::from(value as u8));
+            value
         } else if MCR == address {
             unimplemented!("MCR")
         } else {
