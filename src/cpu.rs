@@ -502,14 +502,12 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
                 // location, starting with the address specified in R0. Writing terminates with
                 // the occurrence of x0000 in a memory location.
                 TrapVector::PUTS => {
-                    let mut i: u16 = state.registers.read(R0);
-
-                    while state.memory.read(i) != 0 {
-                        print!("{}", char::from(state.memory.read(i) as u8));
-                        i += 1;
+                    let mut address = state.registers.read(R0);
+                    while state.memory.read(address) != 0 {
+                        print!("{}", char::from(state.memory.read(address) as u8));
+                        address += 1;
                     }
-
-                    io::stdout().flush().expect("unable to flush stdin");
+                    io::stdout().flush().expect("unable to flush stdout");
                 }
 
                 // Print a prompt on the screen and read a single character from the keyboard.
