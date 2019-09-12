@@ -11,17 +11,14 @@ const KBDR: u16 = 0xfe02;
 
 // Display status register. The ready bit (bit [15]) indicates if the display device is ready to
 // receive another character to print on the screen.
-#[allow(unused)]
 const DSR: u16 = 0xfe04;
 
 // Display data register. A character written in the low byte of this register will be displayed on
 // the screen.
-#[allow(unused)]
 const DDR: u16 = 0xfe06;
 
 // Machine control register. Bit [15] is the clock enable bit. When cleared, instruction processing
 // stops.
-#[allow(unused)]
 const MCR: u16 = 0xfffe;
 
 pub struct Memory {
@@ -36,16 +33,26 @@ impl Memory {
     }
 
     pub fn read(&mut self, address: u16) -> u16 {
-        if address == KBSR as u16 {
-            if check_key() {
-                self.memory[KBSR as usize] = 1 << 15;
-                self.memory[KBDR as usize] = get_char();
+        if KBSR == address {
+            let value = if check_key() { 1 << 15 } else { 0 };
+            self.memory[KBSR as usize] = value;
+            value
+        } else if KBDR == address {
+            let kbsr = self.memory[KBSR as usize];
+            if ((kbsr >> 15) & 0x1) == 1 {
+                get_char()
             } else {
-                self.memory[KBSR as usize] = 0;
+                0
             }
+        } else if DSR == address {
+            unimplemented!("DSR")
+        } else if DDR == address {
+            unimplemented!("DDR")
+        } else if MCR == address {
+            unimplemented!("MCR")
+        } else {
+            self.memory[address as usize]
         }
-
-        self.memory[address as usize]
     }
 
     pub fn write(&mut self, address: u16, value: u16) {
