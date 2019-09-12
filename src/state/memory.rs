@@ -27,9 +27,11 @@ pub struct Memory {
 
 impl Memory {
     pub fn new() -> Self {
-        Self {
-            memory: [0; u16::max_value() as usize],
-        }
+        let mut memory = [0; u16::max_value() as usize];
+        memory[DSR as usize] = 1 << 15;
+        memory[MCR as usize] = 1 << 15;
+
+        Self { memory }
     }
 
     pub fn read(&mut self, address: u16) -> u16 {
