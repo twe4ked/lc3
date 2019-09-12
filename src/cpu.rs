@@ -516,7 +516,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
                 // The character is echoed onto the console monitor, and its ASCII code is
                 // copied into R0. The high eight bits of R0 are cleared.
                 TrapVector::IN => {
-                    unimplemented!();
+                    unimplemented!("TrapVector: IN");
                 }
 
                 // Write a string of ASCII characters to the console. The characters are
@@ -529,7 +529,7 @@ pub fn execute(mut state: State, instruction: Instruction) -> State {
                 // location containing the last character to be written.) Writing terminates
                 // with the occurrence of x0000 in a memory location.
                 TrapVector::PUTSP => {
-                    unimplemented!();
+                    unimplemented!("TrapVector: PUTSP");
                 }
 
                 // Halt execution and print a message on the console.
