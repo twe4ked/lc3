@@ -188,19 +188,12 @@ fn parse(line: &str) -> Command {
 
 fn parse_hex_after_pattern(pattern: &str, line: &str) -> Option<u16> {
     if line.starts_with(pattern) {
-        match line.find(pattern) {
-            Some(_) => {
-                let (_, address) = line.split_at(pattern.len());
-                if !address.is_empty()
-                    && address.len() <= 4
-                    && address.bytes().all(|b| b.is_ascii_hexdigit())
-                {
-                    return Some(
-                        u16::from_str_radix(address, 16).expect("unable to parse address"),
-                    );
-                }
-            }
-            None => (),
+        let (_, address) = line.split_at(pattern.len());
+        if !address.is_empty()
+            && address.len() <= 4
+            && address.bytes().all(|b| b.is_ascii_hexdigit())
+        {
+            return Some(u16::from_str_radix(address, 16).expect("unable to parse address"));
         }
     }
 
