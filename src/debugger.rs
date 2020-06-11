@@ -174,13 +174,11 @@ fn parse(line: &str) -> Command {
         "h" | "help" => Command::Help,
         "exit" => Command::Exit,
         line => {
-            match parse_hex_after_pattern("read 0x", line) {
-                Some(address) => return Command::Read(address),
-                None => (),
+            if let Some(address) = parse_hex_after_pattern("read 0x", line) {
+                return Command::Read(address);
             }
-            match parse_hex_after_pattern("break-address 0x", line) {
-                Some(address) => return Command::BreakAddress(address),
-                None => (),
+            if let Some(address) = parse_hex_after_pattern("break-address 0x", line) {
+                return Command::BreakAddress(address);
             }
 
             Command::Unknown(line.trim().to_string())
