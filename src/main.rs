@@ -1,5 +1,4 @@
 use clap::{App, Arg};
-use lc3;
 use nix::sys::termios::{tcgetattr, tcsetattr, LocalFlags, SetArg};
 use std::boxed::Box;
 use std::error::Error;
