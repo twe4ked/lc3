@@ -193,7 +193,7 @@ fn parse_hex_after_pattern(pattern: &str, line: &str) -> Option<u16> {
         match line.find(pattern) {
             Some(_) => {
                 let (_, address) = line.split_at(pattern.len());
-                if address.len() > 0
+                if !address.is_empty()
                     && address.len() <= 4
                     && address.bytes().all(|b| b.is_ascii_hexdigit())
                 {
